@@ -193,11 +193,11 @@ See this [notebook](notebooks/Examples.ipynb).
 * Install the package with `pip` or  [`Poetry`](https://python-poetry.org/docs)
   
 ```console
-pip install lmdef
+pip install lmfunctions
 ```
 
 ```console
-poetry add lmdef
+poetry add lmfunctions
 ```
 
 ## Language Model Backend
