@@ -1,0 +1,24 @@
+{% if description %}{{ description }}
+
+{% endif %}{% if input_schema %}## Input JSON Schema:
+```
+{{ input_schema }}
+```
+
+{% endif %}{% if output_schema %}## Output JSON Schema:
+```
+{{ output_schema }}
+```
+
+{% endif %}{% raw %}{% if examples %}## Examples:
+{% for input, output in examples %}
+Input:
+{{ input }}
+
+Output:
+{{ output }}
+
+{% endfor %}{% endif %}{% if inputs %}{%endraw%}{% if input_schema or description or output_schema %}{%raw%}Input:
+{{ inputs }}
+
+Output:{%endif%}{% endraw %}{%else%}{%raw%}{{ inputs }}{%endif%}{% endraw %}{% endif %}

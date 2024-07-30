@@ -1,0 +1,59 @@
+[tool.poetry]
+name = "lmfunctions"
+version = "0.1.0"
+description = "Python functions backed by language models"
+authors = ["Francesco Dinuzzo"]
+readme = "README.md"
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+jinja2 = "^3.1.4"
+pydantic = "^2.6.0"
+tenacity = "^8.2.3"
+rich = "^13.6.0"
+pyyaml = "^6.0.1"
+datamodel-code-generator = "^0.25.5"
+fsspec = "^2024.3.1"
+huggingface-hub = "^0.23.2"
+lm-format-enforcer = "^0.10.2"
+openai = "^1.16.2"
+requests = "^2.32.3"
+aiohttp = "^3.9.5"
+pandas = "^2.2.2"
+numpy = "1.26.2"
+opentelemetry-sdk = "^1.25.0"
+
+[tool.poetry.group.dev.dependencies]
+black = {extras = ["jupyter"], version = "^24.4.0"}
+ruff = "^0.0.287"
+pytest = "^7.4.0"
+coverage = {extras = ["toml"], version = "^7.3.0"}
+pytest-cov = "^4.1.0"
+jupyter = "^1.0.0"
+mypy = "1.10.0"
+nox = "^2023.4.22"
+types-requests = "<2.31"
+nox-poetry = "^1.0.3"
+ipython = "^8.20.0"
+pytest-mock = "^3.12.0"
+pytest-asyncio = "^0.23.4"
+safety = "^3.2.3"
+pre-commit = "^3.7.1"
+opentelemetry-exporter-otlp = "^1.25.0"
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 200
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 200
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
