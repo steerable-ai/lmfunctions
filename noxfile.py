@@ -48,8 +48,7 @@ def safety(session):
 
 @nox.session(python=["3.10", "3.11", "3.12"])
 def tests(session) -> None:
-    session.install("numpy", ".")
-    session.install("llama-cpp-python", ".")
+    session.install("llama-cpp-python==0.2.83", ".")
     session.install("litellm", ".")
     session.install("transformers[torch]", ".")
     session.install("fastapi", ".")

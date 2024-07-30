@@ -88,10 +88,10 @@ class LlamaCppBackend(LMBackend):
         super().__init__(**kwargs)
         if self.n_gpu_layers is None:
             gpu_info = cuda_check()
-            if not gpu_info["cuda_available"]:
-                self.n_gpu_layers = 0
-            else:
+            if gpu_info["cuda_available"]:
                 self.n_gpu_layers = -1
+            else:
+                self.n_gpu_layers = 0
         if self.n_threads is None:
             self.n_threads = multiprocessing.cpu_count() // 2
 
