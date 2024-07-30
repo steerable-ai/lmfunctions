@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "lmfunctions"
+name = "lmdef"
 version = "0.1.0"
 description = "Python functions backed by language models"
 authors = ["Francesco Dinuzzo"]
