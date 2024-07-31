@@ -1,4 +1,4 @@
-![CI](https://github.com/steerable-ai/lmdef/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/steerable-ai/lmfunctions/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/steerable-ai/lmfunctions/graph/badge.svg?token=JHZLMOYX86)](https://codecov.io/gh/steerable-ai/lmfunctions)
 
 # lmfunctions
