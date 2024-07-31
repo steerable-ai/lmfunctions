@@ -64,6 +64,8 @@ def tests(session) -> None:
         "term",
         "--cov-report",
         "html:htmlcov",
+        "--cov-report",
+        "xml:coverage.xml",
         "--cov=lmfunctions",
         "--cov=tests",
     )
