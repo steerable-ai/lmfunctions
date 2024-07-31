@@ -1,52 +1,53 @@
-# LMdef
-
 ![CI](https://github.com/steerable-ai/lmdef/actions/workflows/ci.yml/badge.svg)
 
-Easily create Python functions backed by language models. Just define the signature and docstring and add the `@lmdef` decorator:
+# lmfunctions
+
+Easily express language model tasks as Python functions. Just define the signature and docstring and add the `@lmdef` decorator:
 
 ```python
 from lmfunctions import lmdef
 
 @lmdef
-def contextual_qa(context: str, query: str) -> str:
+def qa(context: str, query: str) -> str:
     """
     Answer the question using information from the context
     """
 ```
 
-The resulting `language function` invokes a language model backend under the hood, but can be used just like a regular function:
+Calling the function will invoke a language model under the hood:
 
 ```python
-context = """John is planning a vacation. He wants to visit a country with a rich history,
-             delicious cuisine, and beautiful beaches. He also prefers places where English
-             is commonly spoken."""
-query = "Where should John go?"
+context = """John started his first job right after graduating from college in 2005.
+He spent five years working in that company before deciding to pursue a master's degree,
+which took him two years to complete. After obtaining his master's degree, he worked
+in various companies for another decade before landing his current job, which he has been
+in for the past three years. John mentioned that he entered college at the typical age of 18."""
 
-contextual_qa(context,query)
+query = "How old is John?"
+
+qa(context,query)
 
 # Based on the given context, ...
 ```
 
-<details> <summary>Language model backend</summary>
+<details> <summary>Backends</summary>
 
 The default backend can be configured to invoke a remote API (such as OpenAI's GPT):
 
 ```python
 lmf.set_backend.litellm(model="gpt-4o")
 ```
-or run a local model (for example via llama.cpp):
+or a local model via llama.cpp or HF Transformers
 
 ```python
 import lmfunctions as lmf
 lmf.set_backend.llamacpp(model="hf://Qwen/Qwen2-0.5B-Instruct-GGUF/qwen2-0_5b-instruct-q4_k_m.gguf")
 ```
 
-See all supported [language model backends](#language-model-backend).
-
 </details>
 
 <details>
-<summary>Add Constraints</summary>
+<summary>Tasks</summary>
 
 Constraints on inputs and outputs can be enforced via type hints. For instance, a text classification task can be expressed as follows:
 
@@ -63,11 +64,7 @@ sentiment("I feel under the weather today")
 # <Output.negative: 'negative'>
 ```
 
-</details>
-
-<details> <summary>Complex Constraints</summary>
-
-[Pydantic](https://docs.pydantic.dev/latest/) models or JSON schemas can be used to specify complex constraints and inject additional information about fields, useful to guide the model
+[Pydantic](https://docs.pydantic.dev/latest/) models or JSON schemas can be used to specify more complex constraints and inject information about the fields:
 
 ```python
 from lmfunctions import lmdef
@@ -87,10 +84,6 @@ def city_info(input: str) -> CityInfo:
 city_info("Paris")
 # CityInfo(country='France', population=2.16, languages_spoken=['French'])
 ```
-
-</details>
-
-<details> <summary>Structured Data Generation</summary>
 
 Generating structured data can be accomplished by simply defining a language function without input arguments:
 
@@ -139,7 +132,7 @@ sentiment_deserialized("This is an excellent Python package")
 # <Output.positive: 'positive'>
 ```
 
-This allows to store them in text files and dynamically load them from a remote artifact:
+This allows to store them in text files and dynamically load them from remote artifacts:
 
 ```python
 from lmfunctions import from_store
@@ -154,52 +147,29 @@ route(origin="Seattle",destination="New York")
 Event managers and callbacks allow to instrument all execution stages, gaining visibility into internal variables and metrics.
 </details>
 
-<details> <summary>Additional examples</summary>
-
-See this [notebook](notebooks/Examples.ipynb).
-
-</details>
-
 ## Installation
 
-* Install at least one of the supported [language model backend](#language-model-backend):
-
-    * llama.cpp (CPU only):
+* Requirements: Python>3.10
+  
+* Install at least one language model backend and the package using `pip` (comment out those you don't need)
 
     ```console
-    pip install llama-cpp-python
+    pip install llama-cpp-python==0.2.83 #CPU Only
+    pip install transformers[torch] 
+    pip install litellm
+    pip install lmfunctions
     ```
-    * llama.cpp (GPU with CUDA support):
 
-    ```console
-    CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python
+* If you have an NVIDIA GPU, you can build llama.cpp with CUDA support:
+
+  ```console
+    CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python==0.2.83
+    pip install transformers[torch] 
+    pip install litellm
+    pip install lmfunctions
+    pip install lmfunctions
     ```
     
-    * Other options to build llama.cpp are listed [here](https://llama-cpp-python.readthedocs.io/en/latest/)
-
-    * Transformers 
-
-    ```console
-    pip install transformers[torch]
-    ```
-
-    * Litellm (API-based language models)
-
-    ```console
-    pip install litellm
-    ```
-
-
-* Install the package with `pip` or  [`Poetry`](https://python-poetry.org/docs)
-  
-```console
-pip install lmfunctions
-```
-
-```console
-poetry add lmfunctions
-```
-
 ## Language Model Backend
 
 The backends currently supported are 
@@ -208,7 +178,7 @@ The backends currently supported are
 * [transformers](https://github.com/huggingface/transformers)
 * [litellm](https://github.com/BerriAI/litellm)
 
-The default backend can be set using shorcuts. For example, the following sets `llamacpp` and retrieves a model from from HuggingFace Hub:
+The default language model can be set using shorcuts. For example, the following sets `llamacpp` and retrieves a model from from HuggingFace Hub:
 
 ```python
 import lmfunctions as lmf
