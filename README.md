@@ -22,7 +22,7 @@ context = """John started his first job right after graduating from college in 2
 He spent five years working in that company before deciding to pursue a master's degree,
 which took him two years to complete. After obtaining his master's degree, he worked
 in various companies for another decade before landing his current job, which he has been in
-for the past three years. John mentioned that he entered college at the typical age of 18."""
+for the past three years. John mentioned that he entered college at the typical age of 18"""
 
 query = "How old is John?"
 
@@ -105,7 +105,7 @@ def cocktail() -> Cocktail:
 
 ```python
 cocktail()
-# Cocktail(name='Sakura Sunset', glass_type='Coupe glass', ingredients=['1 1/2 oz Japanese whiskey', '1/2 oz cherry liqueur', ...
+# Cocktail(name='Sakura Sunset', glass_type='Coupe glass', ingredients=['1 1/2 oz Japanese whiskey' ...
 ```
 
 </details>
@@ -169,7 +169,6 @@ Event managers and callbacks allow to instrument all execution stages, gaining v
     pip install transformers[torch] 
     pip install litellm
     pip install lmfunctions
-    pip install lmfunctions
     ```
     
 ## Language Model Backend
@@ -195,7 +194,7 @@ to use OpenaAI's GPT-4o API:
 lmf.set_backend.litellm(model="gpt-4o")
 ```
 
-This requires setting suitable API keys in the environment (in this case an OpenAI API key obtainable by creating an OpenAI account).
+The necessary API keys (in this case OpenAI API) need to be set as environmnet variables.
 
 ###
 
@@ -203,8 +202,8 @@ The default backend can be overridden when calling the language function:
 
 ```python
 from lmfunctions.lmbackend import LiteLLMBackend
-gpt4omini = LiteLLMBackend(model="gpt-4o-mini")
-contextual_qa(context,query,backend=gpt4omini)
+gpt_4o_mini = LiteLLMBackend(model="gpt-4o-mini")
+qa(context,query,backend=gpt_4o_mini)
 ```
 
 To display information about the current language model backend settings:
