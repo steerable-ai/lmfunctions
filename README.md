@@ -20,8 +20,8 @@ Calling the function will invoke a language model under the hood:
 context = """John started his first job right after graduating from college in 2005.
 He spent five years working in that company before deciding to pursue a master's degree,
 which took him two years to complete. After obtaining his master's degree, he worked
-in various companies for another decade before landing his current job, which he has been
-in for the past three years. John mentioned that he entered college at the typical age of 18."""
+in various companies for another decade before landing his current job, which he has been in
+for the past three years. John mentioned that he entered college at the typical age of 18."""
 
 query = "How old is John?"
 
@@ -145,6 +145,7 @@ route(origin="Seattle",destination="New York")
 
 <details> <summary>Observability</summary>
 Event managers and callbacks allow to instrument all execution stages, gaining visibility into internal variables and metrics.
+
 </details>
 
 ## Installation
