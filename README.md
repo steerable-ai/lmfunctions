@@ -102,9 +102,7 @@ class Cocktail(BaseModel):
 @lmdef
 def cocktail() -> Cocktail:
     """Invent a new cocktail"""
-```
 
-```python
 cocktail()
 # Cocktail(name='Sakura Sunset', glass_type='Coupe glass', ingredients=['1 1/2 oz Japanese whiskey' ...
 ```
