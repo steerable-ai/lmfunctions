@@ -36,6 +36,7 @@ qa(context,query)
 The default backend can be configured to invoke a remote API (such as OpenAI's GPT):
 
 ```python
+import lmfunctions as lmf
 lmf.set_backend.litellm(model="gpt-4o")
 ```
 or a local model via llama.cpp or HF Transformers
