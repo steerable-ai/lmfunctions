@@ -5,9 +5,15 @@ import pytest
 
 import lmfunctions as lmf
 from lmfunctions.eventmanager import EventManager
-from lmfunctions.eventmanager.managers import timeEvents
+from lmfunctions.managers import (
+    consoleRich,
+    fileLog,
+    panelPrint,
+    timeEvents,
+    tokenStream,
+)
 
-from .test_lmbackend import TEST_CHAT_BACKEND
+from .test_backends import TEST_CHAT_BACKEND
 from .test_lmfuncs import test_functions
 
 route, args, kwargs = test_functions["route"]
@@ -15,26 +21,24 @@ route, args, kwargs = test_functions["route"]
 
 def test_eventmanager(mocker):
     lmf.default.backend = TEST_CHAT_BACKEND
-    lmf.set_event_manager.panelprint()
+    lmf.default.event_manager = panelPrint()
     route(*args, **kwargs)
-    lmf.set_event_manager.consolerich()
+    lmf.default.event_manager = consoleRich()
     route(*args, **kwargs)
     lmf.default.event_manager += timeEvents()
     route(*args, **kwargs)
-    lmf.set_event_manager.time_events()
 
     with TemporaryDirectory(ignore_cleanup_errors=True) as temporary_directory_name:
         temporary_directory = Path(temporary_directory_name)
         temporary_file_path = Path(temporary_directory / "logs.log")
-        lmf.set_event_manager.filelogger(log_file=str(temporary_file_path))
+        lmf.default.event_manager = fileLog(log_file=str(temporary_file_path))
         route(*args, **kwargs)
 
-    lmf.set_event_manager.tokenstream()
-    lmf.default.event_manager += EventManager()
+    lmf.default.event_manager = EventManager() + tokenStream()
     mocker.patch(
-        "lmfunctions.lmbackend.backends.llamacpp.LlamaCppBackend.complete",
+        "lmfunctions.backends.llamacpp.LlamaCppBackend.complete",
         return_value=lmf.LMResponse("{{"),
     )
     with pytest.raises(ValueError):
         route(*args, **kwargs)
-    lmf.set_event_manager.default()
+    lmf.default.event_manager = EventManager()

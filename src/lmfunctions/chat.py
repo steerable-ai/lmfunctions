@@ -1,10 +1,11 @@
 from functools import partial
-from typing import Any, Callable, List, Optional
+from typing import Callable, List, Optional
 
 from rich import print
 
+from lmfunctions.backends import LMBackend
 from lmfunctions.default import default
-from lmfunctions.lmbackend.lmbackend import LMBackend
+from lmfunctions.handlers import Handler, PrintHandler
 
 
 def multiline_input(terminators=tuple()):
@@ -39,8 +40,8 @@ def chat(
     input_callback: Callable[[], str] = partial(
         multiline_input, terminators=("", "\n", "/exit", "/clear", "/history")
     ),
-    new_token_or_char_callback: Callable[[Any], None] = lambda **kwargs: print(
-        kwargs["token_or_char"], end="", flush=True
+    new_token_or_char_callback: Handler = PrintHandler(
+        end="", flush=True, varnames=["token_or_char"]
     ),
 ):
     """

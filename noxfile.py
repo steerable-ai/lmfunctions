@@ -48,6 +48,10 @@ def safety(session):
 
 @nox.session(python=["3.10", "3.11", "3.12"])
 def tests(session) -> None:
+    from lmfunctions.utils import cuda_check
+
+    if cuda_check()["cuda_available"]:
+        session.env.update({"CMAKE_ARGS": "-DLLAMA_CUDA=on"})
     session.install("llama-cpp-python==0.2.83", ".")
     session.install("litellm", ".")
     session.install("transformers[torch]", ".")

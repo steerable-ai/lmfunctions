@@ -1,4 +1,4 @@
-import lmfunctions.base.base
+import lmfunctions.base
 from lmfunctions.base import Base
 
 
@@ -25,11 +25,9 @@ def test_dumps():
 
 def test_push(mocker):
     model = MyDataModel()
-    mocker.patch("lmfunctions.base.base.hub.push")
+    mocker.patch("lmfunctions.base.hub.push")
     model.push("path/to/object")
-    lmfunctions.base.base.hub.push.assert_called_once_with(
-        "path/to/object", model.dumps()
-    )
+    lmfunctions.base.hub.push.assert_called_once_with("path/to/object", model.dumps())
 
 
 def test_load():
@@ -46,16 +44,16 @@ def test_loads():
 
 def test_loadf(mocker):
     model = MyDataModel()
-    mocker.patch("lmfunctions.base.base.loadf", return_value=data)
+    mocker.patch("lmfunctions.base.loadf", return_value=data)
     model.loadf("url")
-    lmfunctions.base.base.loadf.assert_called_once_with("url")
+    lmfunctions.base.loadf.assert_called_once_with("url")
 
 
 def test_pull(mocker):
     model = MyDataModel()
-    mocker.patch("lmfunctions.base.base.hub.pull", return_value=data)
+    mocker.patch("lmfunctions.base.hub.pull", return_value=data)
     model.pull("path/to/object")
-    lmfunctions.base.base.hub.pull.assert_called_once_with("path/to/object")
+    lmfunctions.base.hub.pull.assert_called_once_with("path/to/object")
 
 
 def test_from_string():
@@ -64,15 +62,15 @@ def test_from_string():
 
 
 def test_from_file(mocker):
-    mocker.patch("lmfunctions.base.base.loadf")
+    mocker.patch("lmfunctions.base.loadf")
     MyDataModel.from_file("url")
-    lmfunctions.base.base.loadf.assert_called_once_with("url")
+    lmfunctions.base.loadf.assert_called_once_with("url")
 
 
 def test_from_store(mocker):
-    mocker.patch("lmfunctions.base.base.hub.pull", return_value=data)
+    mocker.patch("lmfunctions.base.hub.pull", return_value=data)
     MyDataModel.from_store("path/to/object")
-    lmfunctions.base.base.hub.pull.assert_called_once_with("path/to/object")
+    lmfunctions.base.hub.pull.assert_called_once_with("path/to/object")
 
 
 def test_info():

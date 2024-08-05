@@ -2,13 +2,14 @@ import time
 from multiprocessing import Process
 from typing import Dict, Literal, Tuple
 
-import lmfunctions as lmf
 import pytest
 import requests
+
+import lmfunctions as lmf
 from lmfunctions import LMFunc, from_store, from_string, lmdef
 
 from .models import CityInfo, Entities, FlightRoute, NERInput, Plan, TwoCities
-from .test_lmbackend import TEST_CHAT_BACKEND
+from .test_backends import TEST_CHAT_BACKEND
 
 
 @lmdef

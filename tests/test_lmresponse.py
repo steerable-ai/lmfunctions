@@ -5,7 +5,7 @@ import pytest
 import lmfunctions as lmf
 from lmfunctions import LMResponse
 
-from .test_lmbackend import TEST_CHAT_BACKEND
+from .test_backends import TEST_CHAT_BACKEND
 
 
 def test_init_response():

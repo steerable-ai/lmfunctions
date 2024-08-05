@@ -1,6 +1,6 @@
 import lmfunctions as lmf
 
-from .test_lmbackend import TEST_CHAT_BACKEND
+from .test_backends import TEST_CHAT_BACKEND
 
 
 def test_chat(mocker):

@@ -1,7 +1,7 @@
 import lmfunctions as lmf
 from lmfunctions.retrypolicy import StopType, WaitType
 
-from .test_lmbackend import TEST_CHAT_BACKEND
+from .test_backends import TEST_CHAT_BACKEND
 from .test_lmfuncs import test_functions
 
 
