@@ -36,6 +36,7 @@ qa(context,query)
 The default backend can be configured to invoke a remote API (such as OpenAI's GPT):
 
 ```python
+import lmfunctions as lmf
 lmf.set_backend.litellm(model="gpt-4o")
 ```
 or a local model via llama.cpp or HF Transformers
@@ -101,9 +102,7 @@ class Cocktail(BaseModel):
 @lmdef
 def cocktail() -> Cocktail:
     """Invent a new cocktail"""
-```
 
-```python
 cocktail()
 # Cocktail(name='Sakura Sunset', glass_type='Coupe glass', ingredients=['1 1/2 oz Japanese whiskey' ...
 ```
