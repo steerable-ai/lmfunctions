@@ -33,7 +33,7 @@ qa(context,query)
 
 <details> <summary>Backends</summary>
 
-The default backend can be configured to invoke a remote API (such as OpenAI's GPT):
+The default backend can be configured to invoke a remote API supported by litellm (such as OpenAI's GPT):
 
 ```python
 import lmfunctions as lmf
