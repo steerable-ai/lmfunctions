@@ -1,5 +1,9 @@
 ![CI](https://github.com/steerable-ai/lmfunctions/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/steerable-ai/lmfunctions/graph/badge.svg?token=JHZLMOYX86)](https://codecov.io/gh/steerable-ai/lmfunctions)
+[![PyPI](https://img.shields.io/pypi/v/lmfunctions)](https://pypi.org/project/lmfunctions/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lmfunctions)](https://pypi.org/project/lmfunctions/)
+[![PyPI - License](https://img.shields.io/pypi/l/lmfunctions)](https://pypi.org/project/lmfunctions/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/lmfunctions)](https://pypi.org/project/lmfunctions/)
 
 # lmfunctions
 
