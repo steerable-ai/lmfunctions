@@ -20,7 +20,7 @@ def llama_ccp_import():
         gpu_info = cuda_check()
         if gpu_info["cuda_available"]:
             os.environ.update({"CMAKE_ARGS": "-DLLAMA_CUDA=on"})
-        if pip_install(["llama-cpp-python==0.2.83"]):
+        if pip_install(["llama-cpp-python"]):
             return import_module(name, package=package)
 
     lazy_import("llama_cpp", import_error_callback=import_error_callback)
