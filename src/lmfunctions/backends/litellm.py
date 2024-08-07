@@ -40,7 +40,16 @@ class LiteLLMBackend(Base):
         self, prompt: str = "", schema: Optional[Dict] = None, **kwargs
     ) -> LMResponse:
         messages = [{"role": "user", "content": prompt}]
-        response_format = dict(type="json_object") if schema else None
+        if schema and schema.get("type", None) == "object":
+            response_format = dict(
+                type="json_schema",
+                json_schema=dict(
+                    name="response",
+                    schema=schema,
+                ),
+            )
+        else:
+            response_format = None
         return self.chat_complete(messages, response_format=response_format, **kwargs)
 
     def chat_complete(self, messages: List, **kwargs) -> LMResponse:
