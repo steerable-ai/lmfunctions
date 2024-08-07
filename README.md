@@ -41,7 +41,7 @@ The default backend can be configured to invoke a remote API supported by litell
 
 ```python
 import lmfunctions as lmf
-lmf.set_backend.litellm(model="gpt-4o")
+lmf.set_backend.litellm(model="gpt-4o-mini")
 ```
 or a local model via llama.cpp or HF Transformers
 
@@ -200,7 +200,7 @@ API providers such as OpenAI (GPT), Anthropic (Claude), Cohere, and many others 
 to use OpenaAI's GPT-4o API:
 
 ```python
-lmf.set_backend.litellm(model="gpt-4o")
+lmf.set_backend.litellm(model="gpt-4o-mini")
 ```
 The necessary API keys (in this case OpenAI's) need to be set as environment variables.
 
@@ -209,9 +209,9 @@ The necessary API keys (in this case OpenAI's) need to be set as environment var
 The default backend can be overridden when calling the language function:
 
 ```python
-from lmfunctions.lmbackend import LiteLLMBackend
-gpt_4o_mini = LiteLLMBackend(model="gpt-4o-mini")
-qa(context,query,backend=gpt_4o_mini)
+from lmfunctions.backends import LiteLLMBackend
+gpt_4o = LiteLLMBackend(model="gpt-4o")
+qa(context,query,backend=gpt_4o)
 ```
 
 To display information about the current language model backend settings:
@@ -227,7 +227,6 @@ A retry policy specifies what to do when an exception occurs while executing the
 
 ```python
 from lmfunctions import RetryPolicy
-
 retrypolicy = RetryPolicy(stop_max_attempt= 2, wait="fixed")
 retrypolicy.info()
 ```
@@ -235,8 +234,8 @@ retrypolicy.info()
 The default RetryPolicy can be modified as follows:
 
 ```python
-import lmfunctions import lmf
-lmf.retrypolicy.stop_max_attempt=10
+import lmfunctions as lmf
+lmf.default.retry_policy.stop_max_attempt = 10
 ```
 
 ## Event Manager
