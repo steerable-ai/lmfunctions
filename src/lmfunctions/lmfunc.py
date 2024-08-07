@@ -26,8 +26,6 @@ from lmfunctions.base import Base
 from lmfunctions.default import default
 from lmfunctions.eventmanager import EventManager
 from lmfunctions.retrypolicy import RetryPolicy
-
-# from lmfunctions.tracer import tracer
 from lmfunctions.utils import from_jsonschema, lazy_import
 
 curdir = os.path.dirname(os.path.realpath(__file__))

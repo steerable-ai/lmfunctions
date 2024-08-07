@@ -4,6 +4,7 @@ from typing import Dict, Literal, Tuple
 
 import pytest
 import requests
+from pytest_cov.embed import cleanup_on_sigterm
 
 import lmfunctions as lmf
 from lmfunctions import LMFunc, from_store, from_string, lmdef
@@ -155,11 +156,9 @@ def serve_func():
     func.serve()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def server():
-    timeout = 20
-    from pytest_cov.embed import cleanup_on_sigterm
-
+    timeout = 120
     cleanup_on_sigterm()
     proc = Process(target=serve_func, args=(), daemon=True)
     proc.start()

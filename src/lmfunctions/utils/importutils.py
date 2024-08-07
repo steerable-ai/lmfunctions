@@ -17,7 +17,16 @@ def pip_install(packages):
     return True
 
 
-def lazy_import(name, package=None, install_packages=None) -> ModuleType | None:
+def install_callback(name, package):
+    if pip_install([name]):
+        return import_module(name, package=package)
+    else:
+        return None
+
+
+def lazy_import(
+    name, package=None, import_error_callback=install_callback
+) -> ModuleType | None:
     """
     Lazily imports a module and handles the case when the module is not found.
 
@@ -30,11 +39,11 @@ def lazy_import(name, package=None, install_packages=None) -> ModuleType | None:
     Raises:
         None
     """
-
     try:
         return import_module(name, package=package)
-    except ImportError:
-        install_packages = install_packages or [name]
-        if pip_install(install_packages):
-            return import_module(name, package=package)
-        raise ImportError(f"The following packages are required: '{install_packages}'")
+    except ImportError as e:
+        if import_error_callback:
+            module = import_error_callback(name, package)
+            if module:
+                return module
+        raise e

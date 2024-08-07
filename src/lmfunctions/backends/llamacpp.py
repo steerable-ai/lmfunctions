@@ -2,6 +2,7 @@ import gc
 import json
 import multiprocessing
 import os
+from importlib import import_module
 from typing import Any, Dict, Iterator, List, Literal, Optional, Union
 
 import huggingface_hub
@@ -9,7 +10,20 @@ from pydantic import model_validator
 
 from lmfunctions.base import Base
 from lmfunctions.lmresponse import LMResponse
-from lmfunctions.utils import cuda_check, lazy_import
+from lmfunctions.utils import cuda_check, lazy_import, pip_install
+
+
+def llama_ccp_import():
+    def import_error_callback(name, package):
+        # Only detects CUDA backend if the user has a GPU
+        # Can check for more backends in the future
+        gpu_info = cuda_check()
+        if gpu_info["cuda_available"]:
+            os.environ.update({"CMAKE_ARGS": "-DLLAMA_CUDA=on"})
+        if pip_install(["llama-cpp-python==0.2.83"]):
+            return import_module(name, package=package)
+
+    lazy_import("llama_cpp", import_error_callback=import_error_callback)
 
 
 class LLamaCppGenerationParams(Base):
@@ -91,7 +105,6 @@ class LlamaCppBackend(Base):
             gpu_info = cuda_check()
             if gpu_info["cuda_available"]:
                 self.n_gpu_layers = -1
-                os.environ.update({"CMAKE_ARGS": "-DLLAMA_CUDA=on"})
 
         if self.n_threads is None:
             self.n_threads = multiprocessing.cpu_count() // 2
@@ -99,7 +112,7 @@ class LlamaCppBackend(Base):
     @property
     def llama(self):
         if self._llama is None:
-            lazy_import("llama_cpp", install_packages=["llama-cpp-python"])
+            llama_ccp_import()
             from llama_cpp import Llama
 
             model_reference = self.model
@@ -130,6 +143,7 @@ class LlamaCppBackend(Base):
     ) -> LMResponse:
 
         if "tokenizer.chat_template" in self.llama.metadata:
+            # If there is a chat template in the metadata, assume the model is a chat model
             messages = [{"role": "user", "content": prompt}]
             response_format = (
                 dict(type="json_object", schema=schema) if schema else None
@@ -138,7 +152,8 @@ class LlamaCppBackend(Base):
                 messages, response_format=response_format, **kwargs
             )
         else:
-            lazy_import("llama_cpp", install_packages=["llama-cpp-python"])
+            # If there is no chat template, assume the model is a text generation model
+            llama_ccp_import()
             from llama_cpp.llama_chat_format import _grammar_for_json_schema
 
             grammar = _grammar_for_json_schema(json.dumps(schema)) if schema else None

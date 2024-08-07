@@ -1,4 +1,5 @@
 import gc
+from importlib import import_module
 from typing import Any, Dict, List, Literal, Optional
 
 from lmformatenforcer import JsonSchemaParser
@@ -6,12 +7,12 @@ from pydantic import model_validator
 
 from lmfunctions.base import Base
 from lmfunctions.lmresponse import LMResponse
-from lmfunctions.utils import cuda_check, lazy_import
+from lmfunctions.utils import cuda_check, lazy_import, pip_install
 
 
 class TransformersBackend(Base):
     name: Literal["transformers"] = "transformers"
-    model: str = "Qwen/Qwen2-0.5B"
+    model: str = "Qwen/Qwen2-0.5B-Instruct"
     config: str | None = None
     feature_extractor: str | None = None
     image_processor: str | None = None
@@ -36,25 +37,28 @@ class TransformersBackend(Base):
             if gpu_info["cuda_available"]:
                 self.device = "cuda"
                 if gpu_info["num_gpus"] > 1 and self.device_map is None:
-                    try:
-                        __import__("accelerate")
-
+                    if lazy_import("accelerate"):
                         self.device_map = "auto"
                         self.device = None
-                    except ImportError:
-                        pass
 
     @property
     def pipeline(self):
+        def import_error_callback(name, package):
+            if pip_install(["transformers[torch]"]):
+                return import_module(name, package=package)
+
         if self._pipeline is None:
-            if lazy_import("transformers", install_packages=["transformers['torch']"]):
+            if lazy_import("transformers", import_error_callback=import_error_callback):
                 import transformers
 
                 tokenizer = transformers.AutoTokenizer.from_pretrained(self.model)
+
                 self._pipeline = transformers.pipeline(
                     task="text-generation",
                     tokenizer=tokenizer,
-                    **self.model_dump(exclude={"name", "generation"})
+                    **self.model_dump(
+                        exclude={"name", "generation"}, exclude_none=True
+                    ),
                 )
                 self._pipeline.model.generation_config.pad_token_id = (
                     tokenizer.eos_token_id
