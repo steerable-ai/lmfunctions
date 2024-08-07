@@ -7,6 +7,7 @@ nox.options.sessions = "lint", "types", "safety", "tests"
 
 @nox.session(python=["3.11"])
 def lint(session) -> None:
+    session.install("pip", "--upgrade", ".")
     session.install("black", ".")
     session.install("black[jupyter]", ".")
     session.install("ruff", ".")
@@ -16,7 +17,7 @@ def lint(session) -> None:
 
 @nox.session(python=["3.11"])
 def types(session) -> None:
-    session.run("pip", "install", "--upgrade", "pip")
+    session.install("pip", "--upgrade", ".")
     session.install("mypy", ".")
     session.run(
         "mypy",
@@ -48,15 +49,7 @@ def safety(session):
 
 @nox.session(python=["3.10", "3.11", "3.12"])
 def tests(session) -> None:
-    from lmfunctions.utils import cuda_check
-
-    if cuda_check()["cuda_available"]:
-        session.env.update({"CMAKE_ARGS": "-DLLAMA_CUDA=on"})
-    session.install("llama-cpp-python==0.2.83", ".")
-    session.install("litellm", ".")
-    session.install("transformers[torch]", ".")
-    session.install("fastapi", ".")
-    session.install("uvicorn", ".")
+    session.install("pip", "--upgrade", ".")
     session.install("coverage", ".")
     session.install("pytest", ".")
     session.install("pytest-mock", ".")
@@ -64,12 +57,15 @@ def tests(session) -> None:
     session.install("pytest-cov", ".")
     session.run(
         "pytest",
+        "-s",
+        "--verbose",
+        "--full-trace",
+        "--cov-report",
+        "xml:coverage.xml",
         "--cov-report",
         "term",
         "--cov-report",
         "html:htmlcov",
-        "--cov-report",
-        "xml:coverage.xml",
         "--cov=lmfunctions",
         "--cov=tests",
     )
