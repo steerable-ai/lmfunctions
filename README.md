@@ -7,7 +7,7 @@
 
 # lmfunctions
 
-Easily express language model tasks as Python functions. Just define the signature and docstring and add the `@lmdef` decorator:
+Express language model tasks as Python functions. Just define the signature and docstring and add the `@lmdef` decorator:
 
 ```python
 from lmfunctions import lmdef
@@ -152,27 +152,34 @@ Event managers and callbacks allow to instrument all execution stages, gaining v
 
 </details>
 
-## Installation
+## QuickStart
 
-* Requirements: Python>3.10
-  
-* Install at least one language model backend and the package using `pip` (comment out those you don't need)
+* Requirements: Python > 3.10
+
+* Install the package (preferably in a virtual environment):
 
     ```console
-    pip install llama-cpp-python==0.2.83 #CPU Only
-    pip install transformers[torch] 
-    pip install litellm
     pip install lmfunctions
     ```
+    
+* Test the installation with
 
-* If you have an NVIDIA GPU, you can build llama.cpp with CUDA support:
+   ```console
+   python -c "import lmfunctions as lmf; print(lmf.from_store('steerable/lmfunc/plan')('save the world'))"
+   ```
+   
+   This will prompt you to install the default language model backend `llama-cpp-python` if not yet present in your environment. The installation will try to detect CUDA availability and use it accordingly, otherwise it will install the default build with CPU support only.
+
+* If you are starting a new project with `lmfunctions`, you can set up the environment as follows:
 
   ```console
-    CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python==0.2.83
-    pip install transformers[torch] 
-    pip install litellm
-    pip install lmfunctions
-    ```
+  mkdir new_project
+  cd new_project
+  python -m venv .venv
+  source .venv/bin/activate
+  pip install --upgrade pip
+  pip install lmfunctions 
+  ```
     
 ## Language Model Backend
 
@@ -186,7 +193,6 @@ The default language model can be set using shorcuts. For example, the following
 
 ```python
 import lmfunctions as lmf
-
 lmf.set_backend.llamacpp(model="hf://Qwen/Qwen2-1.5B-Instruct-GGUF/qwen2-1_5b-instruct-q4_k_m.gguf")
 ```
 
@@ -196,8 +202,7 @@ to use OpenaAI's GPT-4o API:
 ```python
 lmf.set_backend.litellm(model="gpt-4o")
 ```
-
-The necessary API keys (in this case OpenAI API) need to be set as environmnet variables.
+The necessary API keys (in this case OpenAI's) need to be set as environment variables.
 
 ###
 
