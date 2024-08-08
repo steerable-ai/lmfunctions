@@ -234,6 +234,20 @@ To display information about the current backend settings, use the command
 lmf.default.backend.info()
 ```
 
+Backend parameters can be set individually:
+
+```python
+lmf.default.backend.verbose = True
+lmf.default.backend.generation.temperature = 0.1
+```
+
+The entire backend configuration can be then serialized:
+
+```python
+backend_yaml = lmf.default.backend.dumps()
+```
+
+
 ## Event Manager
 
 Execution of a language function proceeds through several steps:
