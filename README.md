@@ -36,7 +36,7 @@ qa(context,query)
 Based on the given context, ...
 ```
 
-Easily serve the function as an API (using [fastapi](https://fastapi.tiangolo.com/) and [uvicorn](https://www.uvicorn.org/)):
+Finally, you can easily serve the function as an API (using [fastapi](https://fastapi.tiangolo.com/) and [uvicorn](https://www.uvicorn.org/)):
 
 ```python
 qa.serve()
