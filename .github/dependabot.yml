@@ -17,7 +17,7 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     reviewers:
-      - "jackmpcollins"
+      - "pinoloricato"
     schedule:
       interval: "weekly"
     ignore:
