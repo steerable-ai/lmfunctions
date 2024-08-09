@@ -32,7 +32,7 @@ coverage = { extras = ["toml"], version = "^7.3.0" }
 pytest-cov = "^4.1.0"
 jupyter = "^1.0.0"
 mypy = "1.10.0"
-nox = "^2023.4.22"
+nox = ">=2023.4.22,<2025.0.0"
 types-requests = "<2.31"
 nox-poetry = "^1.0.3"
 ipython = "^8.20.0"
