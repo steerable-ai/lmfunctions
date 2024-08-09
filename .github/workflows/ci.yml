@@ -5,8 +5,12 @@ name: CI
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - '**.md'
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - '**.md'
 
 jobs:
   lint-types:
@@ -18,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -35,7 +39,7 @@ jobs:
           poetry install
 
       - name: Cache Poetry dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pypoetry
@@ -57,7 +61,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -74,7 +78,7 @@ jobs:
           poetry install
 
       - name: Cache Poetry dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pypoetry
@@ -88,6 +92,6 @@ jobs:
           poetry run nox --verbose --python ${{ matrix.python-version }} --session tests
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
+        uses: codecov/codecov-action@v4.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
