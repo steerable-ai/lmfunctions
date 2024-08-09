@@ -150,8 +150,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
         instructions: list[str]
     
     @lmdef
-    def cocktail() -> Cocktail:
-        """Invent a new cocktail"""
+    def cocktail() -> Cocktail: ...
     ```
     ```python
     cocktail()
