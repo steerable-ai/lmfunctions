@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable, List, Literal, Optional, Union
 
 from lmfunctions.base import Base
 from lmfunctions.lmresponse import LMResponse
-from lmfunctions.utils import lazy_import
+from lmfunctions.utils import from_jsonschema, lazy_import
 
 
 class LiteLLMBackend(Base):
@@ -35,21 +35,13 @@ class LiteLLMBackend(Base):
     api_key: str | None = None
     max_retries: int = 2
     mock_response: str | None = None
+    drop_params: bool = True
 
     def complete(
         self, prompt: str = "", schema: Optional[Dict] = None, **kwargs
     ) -> LMResponse:
         messages = [{"role": "user", "content": prompt}]
-        if schema and schema.get("type", None) == "object":
-            response_format = dict(
-                type="json_schema",
-                json_schema=dict(
-                    name="response",
-                    schema=schema,
-                ),
-            )
-        else:
-            response_format = None
+        response_format = from_jsonschema(schema) if schema else None
         return self.chat_complete(messages, response_format=response_format, **kwargs)
 
     def chat_complete(self, messages: List, **kwargs) -> LMResponse:
@@ -63,5 +55,4 @@ class LiteLLMBackend(Base):
         lazy_import("litellm")
         import litellm
 
-        litellm.drop_params = True
         return litellm.completion(messages=messages, **params)
