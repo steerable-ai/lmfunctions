@@ -25,7 +25,7 @@ opentelemetry-sdk = "^1.25.0"
 
 [tool.poetry.group.dev.dependencies]
 black = { extras = ["jupyter"], version = "^24.4.0" }
-ruff = "^0.0.287"
+ruff = ">=0.0.287,<0.5.8"
 pytest = ">=7.4,<9.0"
 coverage = { extras = ["toml"], version = "^7.3.0" }
 pytest-cov = ">=4.1,<6.0"
