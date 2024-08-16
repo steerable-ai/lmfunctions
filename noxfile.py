@@ -50,14 +50,13 @@ def safety(session):
 @nox.session(python=["3.10", "3.11", "3.12"])
 def tests(session) -> None:
     session.install("pip", "--upgrade", ".")
-    session.install("coverage", ".")
     session.install("pytest", ".")
     session.install("pytest-mock", ".")
     session.install("pytest-asyncio", ".")
     session.install("pytest-cov", ".")
+    session.install("pytest-xdist", ".")
     session.run(
         "pytest",
-        "-s",
         "--verbose",
         "--full-trace",
         "--cov-report",

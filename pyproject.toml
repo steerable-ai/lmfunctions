@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lmfunctions"
-version = "0.1.3"
+version = "0.2.0"
 description = "Python functions backed by language models"
 authors = ["Francesco Dinuzzo"]
 readme = "README.md"
@@ -26,21 +26,19 @@ opentelemetry-sdk = "^1.25.0"
 [tool.poetry.group.dev.dependencies]
 black = { extras = ["jupyter"], version = "^24.4.0" }
 ruff = ">=0.0.287,<0.5.8"
-pytest = ">=7.4,<9.0"
-coverage = { extras = ["toml"], version = "^7.3.0" }
-pytest-cov = ">=4.1,<6.0"
-jupyter = "^1.0.0"
-nox = ">=2023.4.22,<2025.0.0"
 mypy = "1.11.1"
 types-requests = "<2.33"
-nox-poetry = "^1.0.3"
-ipython = "^8.20.0"
+pytest = ">=7.4,<9.0"
+pytest-cov = ">=4.1,<6.0"
+pytest-xdist = "^3.6.1"
 pytest-mock = "^3.12.0"
 pytest-asyncio = "^0.23.4"
+coverage = { extras = ["toml"], version = "^7.3.0" }
+nox = ">=2023.4.22,<2025.0.0"
+nox-poetry = "^1.0.3"
+jupyter = "^1.0.0"
 safety = "^3.2.3"
 pre-commit = "^3.7.1"
-opentelemetry-exporter-otlp = "^1.25.0"
-opentelemetry-api = "^1.26.0"
 
 [tool.black]
 line-length = 88
