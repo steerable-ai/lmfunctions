@@ -1,13 +1,12 @@
 import time
-from multiprocessing import Process
-from typing import Dict, Literal, Tuple
+from multiprocessing import get_context
+from typing import Dict, List, Literal, Tuple
 
 import pytest
 import requests
-from pytest_cov.embed import cleanup_on_sigterm
 
 import lmfunctions as lmf
-from lmfunctions import LMFunc, from_store, from_string, lmdef
+from lmfunctions import LMFunc, Message, from_store, from_string, lmdef
 
 from .models import CityInfo, Entities, FlightRoute, NERInput, Plan, TwoCities
 from .test_backends import TEST_CHAT_BACKEND
@@ -90,6 +89,10 @@ def sentiment(comment: str) -> Literal["positive", "negative", "neutral"]:
 def chat(message: str) -> str: ...
 
 
+@lmdef
+def chatmessage(messages: List[Message]) -> Message: ...
+
+
 truthmachine = LMFunc(
     name="truthmachine",
     description="Returns whether the statement is true or false",
@@ -118,6 +121,7 @@ test_functions: Dict[str, Tuple[LMFunc, Tuple, Dict]] = {
     "truthmachine": (truthmachine, ("This is a test",), dict()),
     "noneraw": (noneraw, tuple(), {}),
     "chat": (chat, ("Hello",), {}),
+    "chatmessage": (chatmessage, ([Message(role="user", content="hello")],), {}),
 }
 
 
@@ -158,9 +162,13 @@ def serve_func():
 
 @pytest.fixture()
 def server():
-    timeout = 120
+    timeout = 20
+
+    from pytest_cov.embed import cleanup_on_sigterm
+
     cleanup_on_sigterm()
-    proc = Process(target=serve_func, args=(), daemon=True)
+    context = get_context()
+    proc = context.Process(target=serve_func, daemon=True)
     proc.start()
     start_time = time.time()
     while True:
@@ -176,7 +184,6 @@ def server():
                 f"Server didn't start within {timeout} seconds"
             )  # pragma: no cover
     yield proc
-    proc.terminate()
     proc.join()
     proc.close()
 
@@ -184,6 +191,7 @@ def server():
 def test_serve(server):
     response = requests.get(test_url)
     assert response.status_code == 200
+    server.terminate()
 
 
 @pytest.mark.asyncio

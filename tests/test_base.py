@@ -1,5 +1,5 @@
 import lmfunctions.base
-from lmfunctions.base import Base
+from lmfunctions.base import Base, hub
 
 
 class MyDataModel(Base):
@@ -27,7 +27,7 @@ def test_push(mocker):
     model = MyDataModel()
     mocker.patch("lmfunctions.base.hub.push")
     model.push("path/to/object")
-    lmfunctions.base.hub.push.assert_called_once_with("path/to/object", model.dumps())
+    hub.push.assert_called_once_with("path/to/object", model.dumps())
 
 
 def test_load():
@@ -53,7 +53,7 @@ def test_pull(mocker):
     model = MyDataModel()
     mocker.patch("lmfunctions.base.hub.pull", return_value=data)
     model.pull("path/to/object")
-    lmfunctions.base.hub.pull.assert_called_once_with("path/to/object")
+    hub.pull.assert_called_once_with("path/to/object")
 
 
 def test_from_string():
@@ -70,7 +70,7 @@ def test_from_file(mocker):
 def test_from_store(mocker):
     mocker.patch("lmfunctions.base.hub.pull", return_value=data)
     MyDataModel.from_store("path/to/object")
-    lmfunctions.base.hub.pull.assert_called_once_with("path/to/object")
+    hub.pull.assert_called_once_with("path/to/object")
 
 
 def test_info():

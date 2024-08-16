@@ -5,7 +5,10 @@ from rich import print
 
 from lmfunctions.backends import LMBackend
 from lmfunctions.default import default
-from lmfunctions.handlers import Handler, PrintHandler
+from lmfunctions.eventmanager import EventManager
+from lmfunctions.lmfunc import lmdef
+from lmfunctions.managers import tokenStream
+from lmfunctions.message import Message
 
 
 def multiline_input(terminators=tuple()):
@@ -13,47 +16,67 @@ def multiline_input(terminators=tuple()):
     Simple input function that allows entering multiple lines
     """
     lines = []
-    prompt = ">>> "
-    while True:
-        line = input(prompt)
-        lines.append(line)
-        if line in terminators:
-            break
-        prompt = "... "
+    line = input(">>> ")
+    lines.append(line)
+    # Check if the line contains both opening and closing """ on the same line
+    if line.count('"""') >= 2:
+        return line  # Return immediately if both are on the same line
+    # Check if the line contains an opening """
+    if '"""' in line:
+        while True:
+            line = input("... ")
+            lines.append(line)
+            # Check if the current line contains the closing triple quote
+            if '"""' in line:
+                break
+    elif line in terminators:
+        return line
     return "\n".join(lines)
 
 
-def default_setup_callback(backend: LMBackend):
-    backend.complete("warmup json", schema={"type": "null"})
+def initialize_chat(backend: LMBackend):
+    # Call the backend to load the model
+    backend(
+        schema={
+            "properties": {"message": {"enum": ["warmup"], "type": "string"}},
+            "type": "object",
+        },
+    )
     print(
         f"Backend: {backend.name}\nModel: {backend.model}\n"
         "Type /exit to exit.\n"
         "Type /history to see all messages\n"
         "Type /clear to clear the chat history\n"
         "Interrupt generation with Ctrl+C (streaming-mode only)\n"
+        'Use triple quotes """ to enter multiple lines\n'
     )
+
+
+@lmdef
+def chatmessage(messages: List[Message]) -> Message: ...  # type: ignore
 
 
 def chat(
     backend: Optional[LMBackend] = None,
-    setup_callback: Optional[Callable] = default_setup_callback,
-    input_callback: Callable[[], str] = partial(
+    event_manager: Optional[EventManager] = None,
+    initialize_chat: Optional[Callable] = initialize_chat,
+    user_input: Callable[[], str] = partial(
         multiline_input, terminators=("", "\n", "/exit", "/clear", "/history")
     ),
-    new_token_or_char_callback: Handler = PrintHandler(
-        end="", flush=True, varnames=["token_or_char"]
-    ),
+    system_message="",
 ):
     """
-    A minimal chat loop that interacts with the default runtime language model.
+    A minimal chat loop that interacts with the specified backend
     """
-    if backend is None:
-        backend = default.backend
-    if setup_callback:
-        setup_callback(backend)
+    backend = backend or default.backend
+    event_manager = event_manager or tokenStream
+    if initialize_chat:
+        initialize_chat(backend)
     messages: List = []
+    if system_message:
+        messages.append(Message(role="system", content=system_message))
     while True:
-        user_message = input_callback()
+        user_message = user_input()
         if not user_message:
             continue
         if user_message in ("/exit", "/clear"):
@@ -64,12 +87,14 @@ def chat(
         elif user_message == "/history":
             print(messages)
         else:
-            messages.append({"role": "user", "content": user_message})
+            messages.append(Message(role="user", content=user_message))
             try:
-                response = backend.chat_complete(messages)
-                response(new_token_or_char_callback=new_token_or_char_callback)
+                response = chatmessage(
+                    messages,
+                    event_manager=event_manager,
+                )
             except KeyboardInterrupt:  # pragma: no cover
                 pass  # pragma: no cover
             finally:
                 print()
-                messages.append({"role": "assistant", "content": response()})
+                messages.append(response)

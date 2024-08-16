@@ -9,7 +9,7 @@ from datamodel_code_generator import DataModelType, InputFileType, generate
 from pydantic import BaseModel
 
 
-def from_jsonschema(schema: Dict) -> Type[BaseModel]:
+def model_from_schema(schema: Dict) -> Type[BaseModel]:
     """Generate a Pydantic Model from a json schema.
 
     Args:

@@ -4,7 +4,7 @@ from lmfunctions.base import Base
 
 
 class OtelEventHandler(Base):
-    """Callback handler that sends events to an OpenTelemetry span."""
+    """Callback handler that sends events and attributes to an OpenTelemetry span."""
 
     name: Literal["otelevent"] = "otelevent"
     span_name: str = "span"

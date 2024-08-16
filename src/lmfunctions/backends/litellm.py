@@ -1,8 +1,8 @@
-from typing import Any, Dict, Iterable, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional
 
 from lmfunctions.base import Base
-from lmfunctions.lmresponse import LMResponse
-from lmfunctions.utils import from_jsonschema, lazy_import
+from lmfunctions.message import Message, is_message_list
+from lmfunctions.utils import lazy_import, model_from_schema
 
 
 class LiteLLMBackend(Base):
@@ -37,22 +37,21 @@ class LiteLLMBackend(Base):
     mock_response: str | None = None
     drop_params: bool = True
 
-    def complete(
-        self, prompt: str = "", schema: Optional[Dict] = None, **kwargs
-    ) -> LMResponse:
-        messages = [{"role": "user", "content": prompt}]
-        response_format = from_jsonschema(schema) if schema else None
-        return self.chat_complete(messages, response_format=response_format, **kwargs)
-
-    def chat_complete(self, messages: List, **kwargs) -> LMResponse:
-        response = self.chat_complete_openai_v1(messages, **kwargs)
-        return LMResponse.from_openai_v1(response)
-
-    def chat_complete_openai_v1(
-        self, messages: List, **kwargs
-    ) -> Union[Any, Iterable[Any]]:
-        params = self.model_dump(exclude={"name"}) | kwargs
+    def __call__(
+        self, input: Any = "", schema: Optional[Dict] = None, **kwargs
+    ) -> Message:
         lazy_import("litellm")
         import litellm
 
-        return litellm.completion(messages=messages, **params)
+        messages = (
+            input if is_message_list(input) else [Message(role="user", content=input)]
+        )
+        params = (
+            self.model_dump(exclude={"name"})
+            | dict(response_format=model_from_schema(schema) if schema else None)
+            | kwargs
+        )
+        response = litellm.completion(
+            messages=[message.dump() for message in messages], **params
+        )
+        return Message.from_openai_v1(response)

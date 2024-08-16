@@ -29,13 +29,15 @@ def test_llamacpp():
     lmf.default.backend.model = lmf.default.backend.llama.model_path
     lmf.default.backend.generation.stream = False
     lmf.complete("", schema)
-    # Test code path for base models without chat template
-    del lmf.default.backend.llama.metadata["tokenizer.chat_template"]
+    # # Test code path for base models without chat template
+    chat_template = TEST_CHAT_BACKEND.llama.metadata["tokenizer.chat_template"]
+    del TEST_CHAT_BACKEND.llama.metadata["tokenizer.chat_template"]
     lmf.default.backend.generation.stream = True
     lmf.complete(prompt)
     lmf.default.backend.generation.stream = False
-    lmf.complete(" ", schema)
+    lmf.complete(" ", schema)  # Currently, the length of the prompt needs to be > 0
     lmf.set_backend.llamacpp()
+    TEST_CHAT_BACKEND.llama.metadata["tokenizer.chat_template"] = chat_template
 
 
 def test_litellm():

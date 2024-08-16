@@ -1,26 +1,29 @@
-import gc
 import json
 import multiprocessing
 import os
 from importlib import import_module
-from typing import Any, Dict, Iterator, List, Literal, Optional, Union
+from typing import Any, Dict, Iterator, List, Literal, Optional
 
 import huggingface_hub
 from pydantic import model_validator
 
 from lmfunctions.base import Base
-from lmfunctions.lmresponse import LMResponse
+from lmfunctions.message import Message, is_message_list
 from lmfunctions.utils import cuda_check, lazy_import, pip_install
+
+
+def llama_cpp_install():
+    # Only detects CUDA backend if the user has a GPU
+    # TODO: add more checks for other backends
+    gpu_info = cuda_check()
+    if gpu_info["cuda_available"]:
+        os.environ.update({"CMAKE_ARGS": "-DLLAMA_CUDA=on"})
+    return pip_install(["llama-cpp-python"], flags=["--upgrade"])
 
 
 def llama_ccp_import():
     def import_error_callback(name, package):
-        # Only detects CUDA backend if the user has a GPU
-        # Can check for more backends in the future
-        gpu_info = cuda_check()
-        if gpu_info["cuda_available"]:
-            os.environ.update({"CMAKE_ARGS": "-DLLAMA_CUDA=on"})
-        if pip_install(["llama-cpp-python"]):
+        if llama_cpp_install():
             return import_module(name, package=package)
 
     lazy_import("llama_cpp", import_error_callback=import_error_callback)
@@ -128,50 +131,59 @@ class LlamaCppBackend(Base):
             )
         return self._llama
 
-    def _unload(self):
-        self._llama = None
-        gc.collect()
-
     @model_validator(mode="after")
     def unload(self):
+        # Force the model to be reloaded when the parameters are changed
         if self._llama:
-            self._unload()
+            self._llama = None
         return self
 
-    def complete(
-        self, prompt: str = "", schema: Optional[Dict] = None, **kwargs
-    ) -> LMResponse:
+    def __call__(
+        self, input: Any = "", schema: Optional[Dict] = None, **kwargs
+    ) -> Message:
+        llama_ccp_import()
 
         if "tokenizer.chat_template" in self.llama.metadata:
-            # If there is a chat template in the metadata, assume the model is a chat model
-            messages = [{"role": "user", "content": prompt}]
-            response_format = (
-                dict(type="json_object", schema=schema) if schema else None
+            # If the metadata contain a chat_template, assume a chat model
+            params = (
+                self.generation.model_dump()
+                | dict(
+                    response_format=(
+                        dict(type="json_object", schema=schema) if schema else None
+                    )
+                )
+                | kwargs
             )
-            return self.chat_complete(
-                messages, response_format=response_format, **kwargs
+            response_openai_v1 = self.llama.create_chat_completion_openai_v1(
+                messages=(
+                    input
+                    if is_message_list(input)
+                    else [Message(role="user", content=input)]
+                ),
+                **params
             )
+            response = Message.from_openai_v1(response_openai_v1)
+
         else:
-            # If there is no chat template, assume the model is a text generation model
-            llama_ccp_import()
+            # Otherwise, assume a text generation model
+            if not isinstance(input, str):
+                raise ValueError("The input must be a string.")
             from llama_cpp.llama_chat_format import _grammar_for_json_schema
 
-            grammar = _grammar_for_json_schema(json.dumps(schema)) if schema else None
-            params = self.generation.model_dump() | kwargs
-            response = self.llama.create_completion(prompt, grammar=grammar, **params)
+            params = (
+                self.generation.model_dump()
+                | dict(
+                    grammar=(
+                        _grammar_for_json_schema(json.dumps(schema)) if schema else None
+                    )
+                )
+                | kwargs
+            )
+            response = self.llama.create_completion(input, **params)
             if isinstance(response, Iterator):
-                response_generator = (c["choices"][0]["text"] or "" for c in response)
-                return LMResponse(response_generator)
+                response = Message((c["choices"][0]["text"] or "" for c in response))
             else:
                 content = response["choices"][0]["text"]
-                return LMResponse(content if isinstance(content, str) else "")
+                response = Message(content if isinstance(content, str) else "")
 
-    def chat_complete(self, messages: List, **kwargs) -> LMResponse:
-        response = self.chat_complete_openai_v1(messages, **kwargs)
-        return LMResponse.from_openai_v1(response)
-
-    def chat_complete_openai_v1(
-        self, messages: List, **kwargs
-    ) -> Union[Any, Iterator[Any]]:
-        params = self.generation.model_dump() | kwargs
-        return self.llama.create_chat_completion_openai_v1(messages=messages, **params)
+        return response

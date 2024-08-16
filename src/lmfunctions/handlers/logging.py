@@ -45,7 +45,7 @@ class LoggingHandler(Base):
             logger = logging.getLogger(self.logger_name)
             logger.setLevel(self.log_level)
             if self.log_file:
-                # Create a logger for file logging
+                # Logging handler for file logging
                 handler = logging.FileHandler(self.log_file)
                 handler.setFormatter(
                     logging.Formatter(
@@ -54,7 +54,7 @@ class LoggingHandler(Base):
                     )
                 )
             else:
-                # Create a logger for stdout with rich handler
+                # Logging handler for stdout with rich handler
                 handler = RichHandler(
                     console=Console(),
                     rich_tracebacks=True,

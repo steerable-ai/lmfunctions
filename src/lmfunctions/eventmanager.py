@@ -27,4 +27,4 @@ class EventManager(Base):
                 for key, value in d.items():
                     handlers.setdefault(key, []).extend(value)
             return EventManager(handlers=handlers)
-        return NotImplemented
+        raise NotImplementedError

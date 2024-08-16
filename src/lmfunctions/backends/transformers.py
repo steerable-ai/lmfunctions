@@ -1,12 +1,12 @@
 import gc
 from importlib import import_module
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 from lmformatenforcer import JsonSchemaParser
 from pydantic import model_validator
 
 from lmfunctions.base import Base
-from lmfunctions.lmresponse import LMResponse
+from lmfunctions.message import Message, is_message_list
 from lmfunctions.utils import cuda_check, lazy_import, pip_install
 
 
@@ -36,10 +36,10 @@ class TransformersBackend(Base):
             gpu_info = cuda_check()
             if gpu_info["cuda_available"]:
                 self.device = "cuda"
-                if gpu_info["num_gpus"] > 1 and self.device_map is None:
-                    if lazy_import("accelerate"):
-                        self.device_map = "auto"
-                        self.device = None
+                # if gpu_info["num_gpus"] > 1 and self.device_map is None:
+                #     if lazy_import("accelerate"):
+                #         self.device_map = "auto"
+                #         self.device = None
 
     @property
     def pipeline(self):
@@ -83,6 +83,7 @@ class TransformersBackend(Base):
 
     @model_validator(mode="after")
     def unload(self):
+        # Force the model to be reloaded when the parameters are changed
         if self._pipeline:
             self._unload()
         return self
@@ -95,22 +96,12 @@ class TransformersBackend(Base):
 
         return build_transformers_prefix_allowed_tokens_fn
 
-    def complete(
-        self, prompt: str = "", schema: Optional[Dict] = None, **kwargs
-    ) -> LMResponse:
-        messages = [{"role": "user", "content": prompt}]
-        pipeline = self.pipeline
-        if schema and pipeline.tokenizer:
-            prefix_function = self.prefix_fn(
-                pipeline.tokenizer, JsonSchemaParser(schema)
-            )
-            return self.chat_complete(
-                messages, prefix_allowed_tokens_fn=prefix_function, **kwargs
-            )
-        else:
-            return self.chat_complete(messages, **kwargs)
-
-    def chat_complete(self, messages: List, **kwargs) -> LMResponse:
+    def __call__(
+        self, input: Any = "", schema: Optional[Dict] = None, **kwargs
+    ) -> Message:
+        messages = (
+            input if is_message_list(input) else [Message(role="user", content=input)]
+        )
         generation_config = self.pipeline.model.generation_config
         if (
             generation_config.max_length == 20
@@ -120,6 +111,20 @@ class TransformersBackend(Base):
         ):
             self.generation["max_new_tokens"] = 4096
 
-        params = self.generation | kwargs
-        response = self.pipeline(messages, **params)
-        return LMResponse(response[0]["generated_text"][-1].get("content", ""))
+        if schema and self.pipeline.tokenizer:
+            prefix_function = self.prefix_fn(
+                self.pipeline.tokenizer, JsonSchemaParser(schema)
+            )
+        else:
+            prefix_function = None
+
+        params = (
+            self.generation | dict(prefix_allowed_tokens_fn=prefix_function) | kwargs
+        )
+        response = self.pipeline(
+            [message.dump() for message in messages],
+            **params,
+        )[
+            0
+        ]["generated_text"][-1]
+        return Message(unprocessed=response["content"], role=response["role"])

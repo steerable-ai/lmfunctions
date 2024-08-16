@@ -25,8 +25,9 @@ from lmfunctions.backends import LMBackend
 from lmfunctions.base import Base
 from lmfunctions.default import default
 from lmfunctions.eventmanager import EventManager
+from lmfunctions.message import Message, is_message_list
 from lmfunctions.retrypolicy import RetryPolicy
-from lmfunctions.utils import from_jsonschema, lazy_import
+from lmfunctions.utils import lazy_import, model_from_schema
 
 curdir = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.join(curdir, "metaprompt.jinja"), "r") as f:
@@ -45,15 +46,13 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
             A unique identifier for the language function.
         description: str
             A brief summary of what the language function does.
+            When the description is empty, the output of the language model backend is returned directly.
         input_schema: dict
-            A JSON schema that defines the expected structure and constraints
-            for input data.
+            A JSON schema that defines the expected structure and constraints for input data.
         output_schema: dict
-            A JSON schema that defines the expected structure and constraints
-            for output data.
+            A JSON schema that defines the expected structure and constraints for output data.
         metaprompt: str
-            A Jinja template that combines the description, input schema, and output
-            schema to generate a dynamic prompt at call time.
+            A Jinja template that combines the description, input schema, and output schema to generate a dynamic prompt at call time.
 
     Methods:
         __call__(*args, examples=[], backend=None, retry_policy=None, event_manager=None, extra_args={}, **kwargs) -> ReturnType:
@@ -92,13 +91,13 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
     @property
     def input_model(self) -> Type[BaseModel]:
         if self._input_model is None:
-            self._input_model = from_jsonschema(self.input_schema or {})
+            self._input_model = model_from_schema(self.input_schema or {})
         return self._input_model
 
     @property
     def output_model(self) -> Type[BaseModel]:
         if self._output_model is None:
-            self._output_model = from_jsonschema(self.output_schema or {})
+            self._output_model = model_from_schema(self.output_schema or {})
         return self._output_model
 
     @property
@@ -120,7 +119,7 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
 
         Args:
             func (Callable[InputArgs, ReturnType], optional): A Python function used to extract the name, description, input schema, and output schema of the language function. Defaults to None.
-            **kwargs: If a Python function is not provided, we initialize directly the model fields: name, description, input_schema, output_schema, metaprompt.
+            **kwargs: If a Python function is not provided, the model fields are initialized directly: name, description, input_schema, output_schema, metaprompt.
         """
         # If no function is provided, initialize the model fields
         if not func:
@@ -134,7 +133,7 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
         signature = inspect.signature(func)
         type_hints = get_type_hints(func)
         return_hint = type_hints.pop("return", None)
-        field_definitions = {
+        field_definitions: Dict[str, Any] = {
             name: (
                 type_hints.get(name, str),
                 ... if bool(param.empty) else param.default,
@@ -148,16 +147,16 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
         else:
             first_field = next(iter(field_definitions.items()))
             first_type_hint = first_field[1][0]
-            if (
+            if len(field_definitions) == 1 and first_type_hint is str:
+                # If the only argument is a string, input_schema is None
+                input_schema = None
+            elif (
                 len(field_definitions) == 1
                 and type(first_type_hint) is type(BaseModel)
                 and issubclass(first_type_hint, BaseModel)
             ):
                 # If the only argument is a Pydantic model, get the input schema from it
                 input_schema = first_type_hint.model_json_schema()
-            elif len(field_definitions) == 1 and first_type_hint is str:
-                # If the only argument is a string, input_schema is None
-                input_schema = None
             else:
                 # Otherwise, create a wrapper model with the input arguments as fields
                 input_schema = create_model(
@@ -165,14 +164,14 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
                 ).model_json_schema()
 
         # Output Schema
-        if type(return_hint) is type(BaseModel) and issubclass(return_hint, BaseModel):
+        if not (description) and return_hint is str or return_hint is Message:
+            # If the description is empty and the return hint is a string or a Message, output_schema is None
+            output_schema = None
+        elif type(return_hint) is type(BaseModel) and issubclass(
+            return_hint, BaseModel
+        ):
             # If the return hint is a Pydantic model, get the output schema from it
             output_schema = return_hint.model_json_schema()
-        elif return_hint is str and not (description):
-            # If the return hint is a string and the description is empty,
-            # output_schema is None. This allows to express a plain language model
-            # call as a language function.
-            output_schema = None
         else:
             # Otherwise, create a wrapper model with the return hint as the output type
             output_schema = create_model(
@@ -239,15 +238,16 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
             )
 
             # Assemble all input arguments into a single input object.
-            # The object can only be a Pydantic model, a dictionary, a string, or None.
             input = None
             if args or kwargs:
-                first_arg = args[0] if args else next(iter(kwargs.values()), None)
+                arg0 = args[0] if args else next(iter(kwargs.values()), None)
                 if len(args) + len(kwargs) == 1 and (
-                    isinstance(first_arg, BaseModel) or isinstance(first_arg, str)
+                    isinstance(arg0, str)  # String
+                    or is_message_list(arg0)  # List of Messages
+                    or isinstance(arg0, BaseModel)  # Pydantic model
                 ):
-                    # If the only argument is a Pydantic model or a string, use it as input
-                    input = first_arg
+                    # Use the only argument directly as input
+                    input = arg0
                 else:
                     # Otherwise, create a dictionary with the input arguments
                     input = {
@@ -260,24 +260,26 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
                     before_sleep=lambda x: event_manager("retry", retry_call_state=x),
                 ):
                     with attempt:
-                        # Render Input as a string
-                        input_string = self.to_json_str(input)
-
-                        # Render Examples as strings
-                        examples_string = [
-                            (self.to_json_str(i), self.to_json_str(o))
-                            for i, o in examples
-                        ]
-
-                        # Render the Prompt
-                        prompt = self.template.render(
-                            inputs=input_string,
-                            examples=examples_string,
-                        )
+                        if is_message_list(input):
+                            backend_input = input
+                        else:
+                            # Render Input as a string
+                            input_string = self.to_json_str(input)
+                            # Render Examples as strings
+                            examples_string = [
+                                (self.to_json_str(i), self.to_json_str(o))
+                                for i, o in examples
+                            ]
+                            # Render Prompt
+                            prompt = self.template.render(
+                                inputs=input_string,
+                                examples=examples_string,
+                            )
+                            backend_input = prompt
 
                         # Language Model Prompt Template Render Callback
                         event_manager(
-                            "prompt_render",
+                            "input_render",
                             func=self,
                             args=args,
                             kwargs=kwargs,
@@ -291,33 +293,38 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
                             ##
                             input=input,
                             attempt=attempt,
-                            input_string=input_string,
-                            examples_string=examples_string,
-                            prompt=prompt,
+                            backend_input=backend_input,
                         )
 
-                        # Language Model Call
-                        response = backend.complete(prompt, self.output_schema)
+                        # Call Backend
+                        response = backend(backend_input, schema=self.output_schema)
 
-                        # Parse the response
-                        parsed_completion = response(
+                        # Process the response
+                        parsed_response = response.process(
                             self.output_schema,
-                            new_token_or_char_callback=lambda **kwargs: event_manager(
+                            handle_token_or_char=lambda **kwargs: event_manager(
                                 "token_or_char", span=span, **kwargs
                             ),
                         )
-                        completion = response.text
-                        if isinstance(parsed_completion, dict):
-                            # If the completion is a dictionary, build a Pydantic object
-                            output = self.output_model(**parsed_completion)
-                            if self.output_model.__name__ == "OutputWrapper":
-                                # If the object is a wrapper, unwrap it
-                                output = getattr(
-                                    output, next(iter(output.model_fields.keys()))
-                                )
+
+                        if not (self.description) and self.output_schema is None:
+                            # If description and output schema are empty, output is the backend output
+                            output = response
                         else:
-                            # Otherwise, the output is the parsed completion
-                            output = parsed_completion
+                            if isinstance(parsed_response, dict):
+                                # If the response is a dictionary, build a Pydantic object
+                                output_model = self.output_model(**parsed_response)
+                                if self.output_model.__name__ == "OutputWrapper":
+                                    # If the object is a wrapper, unwrap it
+                                    first_field = next(
+                                        iter(output_model.model_fields.keys())
+                                    )
+                                    output = getattr(output_model, first_field)
+                                else:
+                                    output = output_model
+                            else:
+                                # Otherwise, the output is the processed response
+                                output = parsed_response
 
                         # Success Callback
                         event_manager(
@@ -333,23 +340,19 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
                             tracer=tracer,
                             span=span,
                             input=input,
+                            backend_input=backend_input,
                             attempt=attempt,
-                            input_string=input_string,
-                            examples_string=examples_string,
-                            prompt=prompt,
                             ##
                             response=response,
-                            parsed_completion=parsed_completion,
-                            completion=completion,
+                            completion=response.content,
                             output=output,
                         )
-
             except Exception as exception:
                 # Exception Callback
                 event_manager("exception", exception=exception, vars=locals())
                 raise exception
-
-            return output
+            finally:
+                return output
 
     def async_handler(self):
         """

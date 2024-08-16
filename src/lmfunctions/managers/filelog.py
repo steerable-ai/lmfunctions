@@ -5,7 +5,7 @@ from lmfunctions.handlers import LoggingHandler
 
 
 def fileLog(log_file="lmdef.log") -> EventManager:
-    """EventManager preset that logs selected internal variables to a file."""
+    """EventManager factory that logs selected internal variables to a file."""
 
     return EventManager(
         handlers={
@@ -13,14 +13,14 @@ def fileLog(log_file="lmdef.log") -> EventManager:
                 LoggingHandler(
                     log_file=log_file,
                     message="Call started with vars:",
-                    log_keys=["self", "input", "examples", "runtime", "kwargs"],
+                    log_keys=["self", "args", "kwargs", "examples"],
                 )
             ],
-            "prompt_render": [
+            "input_render": [
                 LoggingHandler(
                     log_file=log_file,
                     message="Prompt rendered with vars:",
-                    log_keys=["input_string", "examples_string", "prompt"],
+                    log_keys=["backend_input"],
                 )
             ],
             "token_or_char": [
@@ -47,7 +47,7 @@ def fileLog(log_file="lmdef.log") -> EventManager:
                 LoggingHandler(
                     log_file=log_file,
                     message="Process succeeded with vars:",
-                    log_keys=["input", "completion", "parsed_completion", "output"],
+                    log_keys=["input", "completion", "output"],
                 )
             ],
         }

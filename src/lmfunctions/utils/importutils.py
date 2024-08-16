@@ -3,22 +3,26 @@ from importlib import import_module
 from types import ModuleType
 
 
-def pip_install(packages):
+def pip_install(packages, flags=[]):
+
     for package in packages:
-        response = input(
-            f"Package '{package}' is needed. Do you want to run "
-            f"``pip install {package}''? (y/n)"
-        )
-        if response.lower() == "y":
-            subprocess.run(["pip", "install", package])
+        command_list = ["pip", "install", package] + flags
+        if (
+            input(
+                f"Package '{package}' is needed. Do you want to run "
+                f"``{' '.join(command_list)}''? (y/n)"
+            ).lower()
+            == "y"
+        ):
+            subprocess.run(command_list)
             print(f"Package '{package}' installed successfully.")
         else:
             return False
     return True
 
 
-def install_callback(name, package):
-    if pip_install([name]):
+def install_callback(name, package, **kwargs):
+    if pip_install([name], **kwargs):
         return import_module(name, package=package)
     else:
         return None
