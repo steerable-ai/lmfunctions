@@ -158,15 +158,103 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     ```
     Cocktail(name='Sakura Sunset', glass_type='Coupe glass', ingredients=['1 1/2 oz Japanese whiskey' ...
     ```
-    
 
-- Language functions can be serialized:
+- **Function calling** (or **tool usage**) can be achieved by creating a function that outputs the name and parameters of one or more functions to be called. To illustrate this, consider the following simple tools:
+
+  ```python
+
+  def triangle_area(base:int,height:int,unit:str="units"):
+    """
+    Calculate the area of a triangle given its base and height.
+    """
+    area = 0.5 * base * height
+    return f"The area of the triangle is {area} {unit} squared."
+
+  def circle_area(radius:int,unit:str="units"):
+    """
+    Calculate the area of a circle given its radius.
+    """
+    area = 3.14159 * radius ** 2
+    return f"The area of the circle is {area} {unit} squared."
+
+  def hexagon_area(side:int,unit:str="units"):
+    """
+    Calculate the area of a hexagon given the length of a side.
+    """
+    area = 3 * 1.732 * side ** 2 / 2
+    return f"The area of the hexagon is {area} {unit} squared."
+
+  ```
+
+  Now we can create Pydantic models to describe the input parameters for each tool:
+
+  ```python
+  from pydantic import BaseModel
+  from typing import Literal
+  
+  class TriangleAreaParameters(BaseModel):
+    base: int
+    height: int
+    unit: str = "units"
+
+  class CircleAreaParameters(BaseModel):
+    radius: int
+    unit: str = "units"
+
+  class HexagonAreaParameters(BaseModel):
+    side: int
+    unit: str = "units"
+
+  class TriangleAreaCall(BaseModel):
+    name: Literal["triangle_area"]
+    parameters: TriangleAreaParameters
+
+  class CircleAreaCall(BaseModel):
+    name: Literal["circle_area"]
+    parameters: CircleAreaParameters
+
+  class HexagonAreaCall(BaseModel):
+    name: Literal["hexagon_area"]
+    parameters: HexagonAreaParameters
+  ```
+
+  Finally, we can create a language function that decides whether to call a tool or simply return a message:
+
+  ```python
+  from lmfunctions import lmdef
+  
+  @lmdef
+  def decide(goal:str)-> TriangleAreaCall | CircleAreaCall | HexagonAreaCall | str:
+    """ Call the appropriate function based on the goal or respond with a message if no function is appropriate. """
+  ```
+
+    The function `decide` will not actually invoke any of the functions/tools. It will only generate an appropriate data structure, possibly containing the name and parameters of a function to be called. The application can then decide how to handle the output, for instance:
+
+  ```python
+  def act_or_respond(goal:str):
+    decision = decide(goal)
+    if isinstance(decision, str):
+        return decision
+    else:
+        return eval(decision.name)(**decision.parameters.model_dump())
+
+  print(act_or_respond("Find the area of a triangle with a base of 10 meters and height of 5 yards."))
+  # The area of the triangle is 25.0 meters squared.
+  print(act_or_respond("Find the area of a circle with a radius of 10 units."))
+  # The area of the circle is 314.159 units squared.
+  print(act_or_respond("Make me a coffee."))
+  # Sorry, but you didn't request any geometry-related calculation. Please specify the type of shape and its properties to get an area calculation.
+  ```
+
+  Note that this mechanism does not require the language model to be fine-tuned specifically for function calling. Therefore you can start with any language model and use this mechanism to collect data for possible training and fine-tuning tailored to your application.
+
+- Language functions can be **serialized**:
 
     ```python
     sentiment_yaml = sentiment.dumps(format='yaml')
     ```
 
-    deserialized:
+    **deserialized**:
 
     ```python
     from lmfunctions import from_string
@@ -177,7 +265,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     <Output.positive: 'positive'>
     ```
 
-    and dynamically loaded from remote artifacts
+    and **dynamically loaded** from artifacts
 
     ```python
     from lmfunctions import from_store
