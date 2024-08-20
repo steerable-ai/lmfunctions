@@ -195,15 +195,15 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
   class TriangleAreaParameters(BaseModel):
     base: int
     height: int
-    unit: str = "units"
+    unit: str
 
   class CircleAreaParameters(BaseModel):
     radius: int
-    unit: str = "units"
+    unit: str
 
   class HexagonAreaParameters(BaseModel):
     side: int
-    unit: str = "units"
+    unit: str
 
   class TriangleAreaCall(BaseModel):
     name: Literal["triangle_area"]
