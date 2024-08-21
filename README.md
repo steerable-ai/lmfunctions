@@ -36,7 +36,7 @@ qa(context,query)
 Based on the given context, ...
 ```
 
-Finally, you can easily serve the function as an API (using [fastapi](https://fastapi.tiangolo.com/) and [uvicorn](https://www.uvicorn.org/)):
+The function can be also served as an API (using [fastapi](https://fastapi.tiangolo.com/) and [uvicorn](https://www.uvicorn.org/)):
 
 ```python
 qa.serve()
@@ -52,8 +52,8 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 ## What does this package do?
 
 * Streamlines **prompt engineering** by reducing it to a function definition
-* Makes it easy to perform **structured data generation** and **function calling**
-* Enforces **constraints and guardrails** via constrained generation whenever possible
+* Makes it easy to perform **structured data generation** and **function calling / tool usage**
+* Enforces **constraints and guardrails** via constrained generation (whenever possible)
 * Supports both **local and remote** language models
 * Provides **event managers** to handle events via callbacks (predefined or custom)
 * Provides a **retry policy** to handle exceptions 
@@ -159,7 +159,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     Cocktail(name='Sakura Sunset', glass_type='Coupe glass', ingredients=['1 1/2 oz Japanese whiskey' ...
     ```
 
-- **Function calling** (or **tool usage**) can be achieved by creating a function that outputs the name and parameters of one or more functions to be called. To illustrate this, consider the following simple tools:
+- **Function calling** (or **tool usage**) allows to leverage language models to build agentic applications that take actions in the real world. Generating a function call is also a particular case of structured output generation, where the output structure must contain the name of one or multiple functions to call and suitable parameter values to pass. To illustrate how to accomplish this with `lmfunctions`, consider the following simple tools:
 
   ```python
 
@@ -218,7 +218,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     parameters: HexagonAreaParameters
   ```
 
-  Finally, we can create a language function that decides whether to call a tool or simply return a message:
+  Then we can create a language function that decides whether to call a tool or simply return a message:
 
   ```python
   from lmfunctions import lmdef
@@ -232,11 +232,13 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 
   ```python
   def act_or_respond(goal:str):
-    decision = decide(goal)
-    if isinstance(decision, str):
-        return decision
+    action_or_message = decide(goal)
+    if isinstance(action_or_message, str):
+        #Message
+        return action_or_message 
     else:
-        return eval(decision.name)(**decision.parameters.model_dump())
+        #Function call
+        return eval(action_or_message.name)(**action_or_message.parameters.model_dump()) 
 
   print(act_or_respond("Find the area of a triangle with a base of 10 meters and height of 5 yards."))
   # The area of the triangle is 25.0 meters squared.
@@ -347,6 +349,45 @@ Execution of a language function proceeds through several steps:
 * Success in obtaining and parsing the output
 
 Event Managers can be used to introduce callback handlers for each of these events. For example they can be used to instrument all execution stages, gaining visibility into internal variables and metrics.
+
+There are a few pre-defined event managers useful for debugging purposes. For instance, the `panelprint` event manager will print selected internal variables to the console in title panels as they get generated:
+
+```python
+lmf.set_event_manager.panelprint()
+```
+
+Similarly, the `consolerich` and `filelogger` event managers will write event logs to the console or to a file, respectively:
+```python
+lmf.set_event_manager.consolerich()
+```
+
+```python
+lmf.set_event_manager.filelogger("logs.log")
+```
+
+To set custom event handlers, you can attach a function to the event manager handlers dictionary. For example, the following logs inputs and outputs of the language model backend in JSON lines file:
+
+```python
+import json
+LOG_FILE_PATH = "jsonlogs.jsonl"
+
+def log_jsonl(span, backend_input, completion, **kwargs):
+    try:
+        log_entry = {
+            "input": backend_input,
+            "output": completion
+        }
+        line = json.dumps(log_entry)
+        
+        with open(LOG_FILE_PATH, 'a') as f:
+            f.write(line + '\n')
+    except Exception as e:
+        print(f"Failed to log data: {e}")
+
+lmf.default.event_manager.handlers['success'] = [log_jsonl]
+```
+
+
 
 ## Retry Policy
 
