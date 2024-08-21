@@ -248,7 +248,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
   # Sorry, but you didn't request any geometry-related calculation. Please specify the type of shape and its properties to get an area calculation.
   ```
 
-  Note that this mechanism does not require the language model to be fine-tuned specifically for function calling. Therefore you can start with any language model and use this mechanism to collect data for possible training and fine-tuning tailored to your application.
+  Note that this mechanism does not require the language model to be fine-tuned specifically for function calling. Therefore you can start with any language model and use this mechanism to collect data. Later on, you can potentially fine-tune the model to achieve goals tailored to your application.
 
 - Language functions can be **serialized**:
 
