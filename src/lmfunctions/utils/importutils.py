@@ -8,14 +8,10 @@ def pip_install(packages, flags=[]):
     for package in packages:
         command_list = ["pip", "install", package] + flags
         if (
-            input(
-                f"Package '{package}' is needed. Do you want to run "
-                f"``{' '.join(command_list)}''? (y/n)"
-            ).lower()
+            input(f"Do you want to run " f"``{' '.join(command_list)}''? (y/n)").lower()
             == "y"
         ):
             subprocess.run(command_list)
-            print(f"Package '{package}' installed successfully.")
         else:
             return False
     return True

@@ -1,3 +1,6 @@
+import logging
+from importlib.util import find_spec
+
 from lmfunctions.backends import (
     LiteLLMBackend,
     LlamaCppBackend,
@@ -14,11 +17,14 @@ from lmfunctions.managers import (
     tokenStream,
 )
 from lmfunctions.retrypolicy import RetryPolicy
+from lmfunctions.utils import cuda_check
 
 from .chat import chat
 from .default import default
 from .lmfunc import LMFunc, lmdef
 from .message import Message
+
+logger = logging.getLogger(__name__)
 
 # Shortcuts
 from_string = LMFunc.from_string
@@ -45,6 +51,15 @@ class BackendSetter:
 
 
 set_backend = BackendSetter()
+
+if cuda_check()["cuda_available"]:
+    logger.info("✔ CUDA available")
+if find_spec("llama_cpp"):
+    logger.info("✔ Llama-CPP backend available")
+if find_spec("transformers"):
+    logger.info("✔ Transformers backend available")
+if find_spec("litellm"):
+    logger.info("✔ Lite-LLM backend available")
 
 
 class EventManagerSetter:

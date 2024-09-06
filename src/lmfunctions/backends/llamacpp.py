@@ -65,7 +65,7 @@ class LlamaCppBackend(Base):
     model: str = (
         "hf://QuantFactory/Meta-Llama-3.1-8B-Instruct-GGUF/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf"
     )
-    n_gpu_layers: Optional[int] = None
+    n_gpu_layers: int | None = None
     split_mode: int = 1
     main_gpu: int = 0
     tensor_split: List[float] | None = None
@@ -156,9 +156,9 @@ class LlamaCppBackend(Base):
             )
             response_openai_v1 = self.llama.create_chat_completion_openai_v1(
                 messages=(
-                    input
+                    [message.dump() for message in input]
                     if is_message_list(input)
-                    else [Message(role="user", content=input)]
+                    else [dict(role="user", content=input)]
                 ),
                 **params
             )

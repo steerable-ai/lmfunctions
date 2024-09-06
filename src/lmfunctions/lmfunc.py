@@ -3,18 +3,8 @@ import json
 import os
 import re
 from types import NoneType
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    List,
-    Optional,
-    ParamSpec,
-    Type,
-    TypeVar,
-    get_type_hints,
-)
+from typing import (Any, Callable, Dict, Generic, List, Optional, ParamSpec,
+                    Type, TypeVar, get_type_hints)
 
 from jinja2 import Template
 from opentelemetry import trace
@@ -217,7 +207,7 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
             extra_args (Dict, optional): Additional arguments that may be used by the callback handlers. Defaults to {}.
         """
         tracer = trace.get_tracer(__name__)
-        with tracer.start_span("lmfunc.__call__") as span:
+        with tracer.start_span(f"Calling {self.name}") as span:
             backend = backend or default.backend
             event_manager = event_manager or default.event_manager
             retry_policy = retry_policy or default.retry_policy
