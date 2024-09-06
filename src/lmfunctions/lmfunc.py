@@ -3,8 +3,18 @@ import json
 import os
 import re
 from types import NoneType
-from typing import (Any, Callable, Dict, Generic, List, Optional, ParamSpec,
-                    Type, TypeVar, get_type_hints)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    ParamSpec,
+    Type,
+    TypeVar,
+    get_type_hints,
+)
 
 from jinja2 import Template
 from opentelemetry import trace
