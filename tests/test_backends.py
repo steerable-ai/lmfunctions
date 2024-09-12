@@ -20,6 +20,9 @@ def test_transformers():
     # Test model unload and reload
     setattr(lmf.default.backend, "model", getattr(lmf.default.backend, "model"))
     lmf.complete("", schema)
+    # Test non-chat template code path
+    lmf.default.backend.pipeline.tokenizer.chat_template = None
+    lmf.complete(prompt)
 
 
 def test_llamacpp():

@@ -99,9 +99,7 @@ class TransformersBackend(Base):
     def __call__(
         self, input: Any = "", schema: Optional[Dict] = None, **kwargs
     ) -> Message:
-        messages = (
-            input if is_message_list(input) else [Message(role="user", content=input)]
-        )
+
         generation_config = self.pipeline.model.generation_config
         if (
             generation_config.max_length == 20
@@ -121,10 +119,24 @@ class TransformersBackend(Base):
         params = (
             self.generation | dict(prefix_allowed_tokens_fn=prefix_function) | kwargs
         )
-        response = self.pipeline(
-            [message.dump() for message in messages],
-            **params,
-        )[
-            0
-        ]["generated_text"][-1]
-        return Message(unprocessed=response["content"], role=response["role"])
+
+        if (
+            hasattr(self.pipeline.tokenizer, "chat_template")
+            and self.pipeline.tokenizer.chat_template
+        ):
+            messages = (
+                input
+                if is_message_list(input)
+                else [Message(role="user", content=input)]
+            )
+            response = self.pipeline(
+                [message.dump() for message in messages],
+                **params,
+            )[0]["generated_text"][-1]
+            return Message(unprocessed=response["content"], role=response["role"])
+        else:
+            # Otherwise, assume a text generation model
+            if not isinstance(input, str):
+                raise ValueError("The input must be a string.")
+            response = self.pipeline(input, **params)[0]["generated_text"][len(input) :]
+            return Message(response)
