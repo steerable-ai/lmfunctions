@@ -92,6 +92,6 @@ jobs:
           poetry run nox --verbose --python ${{ matrix.python-version }} --session tests
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.6.0
+        uses: codecov/codecov-action@v5.0.7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
