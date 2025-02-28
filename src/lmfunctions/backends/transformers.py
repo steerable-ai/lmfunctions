@@ -1,6 +1,6 @@
 import gc
 from importlib import import_module
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from lmformatenforcer import JsonSchemaParser
 from pydantic import model_validator
@@ -25,6 +25,7 @@ class TransformersBackend(Base):
     trust_remote_code: bool = False
     model_kwargs: Dict[str, Any] = {}
     pipeline_class: Any | None = None
+    chat: bool = True
     generation: Dict[str, Any] = {}
 
     _pipeline: Any = None
@@ -36,10 +37,6 @@ class TransformersBackend(Base):
             gpu_info = cuda_check()
             if gpu_info["cuda_available"]:
                 self.device = "cuda"
-                # if gpu_info["num_gpus"] > 1 and self.device_map is None:
-                #     if lazy_import("accelerate"):
-                #         self.device_map = "auto"
-                #         self.device = None
 
     @property
     def pipeline(self):
@@ -57,7 +54,8 @@ class TransformersBackend(Base):
                     task="text-generation",
                     tokenizer=tokenizer,
                     **self.model_dump(
-                        exclude={"name", "generation"}, exclude_none=True
+                        exclude={"name", "generation", "chat"},
+                        exclude_none=True,
                     ),
                 )
                 self._pipeline.model.generation_config.pad_token_id = (
@@ -97,8 +95,11 @@ class TransformersBackend(Base):
         return build_transformers_prefix_allowed_tokens_fn
 
     def __call__(
-        self, input: Any = "", schema: Optional[Dict] = None, **kwargs
-    ) -> Message:
+        self,
+        input: str | List[str] | List[Message] | List[List[Message]] = "",
+        schema: Optional[Dict] = None,
+        **kwargs
+    ) -> Message | List[Message]:
 
         generation_config = self.pipeline.model.generation_config
         if (
@@ -121,22 +122,41 @@ class TransformersBackend(Base):
         )
 
         if (
-            hasattr(self.pipeline.tokenizer, "chat_template")
+            self.chat
+            and hasattr(self.pipeline.tokenizer, "chat_template")
             and self.pipeline.tokenizer.chat_template
         ):
-            messages = (
-                input
-                if is_message_list(input)
-                else [Message(role="user", content=input)]
-            )
-            response = self.pipeline(
-                [message.dump() for message in messages],
-                **params,
-            )[0]["generated_text"][-1]
-            return Message(unprocessed=response["content"], role=response["role"])
+            # Chat mode
+            if is_message_list(input):
+                # Message list
+                output = self.pipeline([message.dump() for message in input], **params)
+            elif isinstance(input, list):
+                # List of strings
+                output = [
+                    self.pipeline(
+                        [dict(role="user", content=_in)],
+                        **params,
+                    )[0]
+                    for _in in input
+                ]
+            else:
+                # Single string
+                output = self.pipeline([dict(role="user", content=input)], **params)
+            output = [response["generated_text"][-1] for response in output]
+            output = [
+                Message(unprocessed=response["content"], role=response["role"])
+                for response in output
+            ]
         else:
-            # Otherwise, assume a text generation model
-            if not isinstance(input, str):
-                raise ValueError("The input must be a string.")
-            response = self.pipeline(input, **params)[0]["generated_text"][len(input) :]
-            return Message(response)
+            # Text generation mode
+            if isinstance(input, str) or isinstance(input, list):
+                output = self.pipeline(input, **params | {"return_full_text": False})
+                if len(output) == 1:
+                    output = [output]
+                output = [Message(_out[0]["generated_text"]) for _out in output]
+            else:
+                raise ValueError("The input must be a string or a list of strings.")
+
+        if len(output) == 1:
+            return output[0]
+        return output

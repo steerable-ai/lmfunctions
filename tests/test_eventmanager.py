@@ -4,7 +4,6 @@ from tempfile import TemporaryDirectory
 import pytest
 
 import lmfunctions as lmf
-from lmfunctions.eventmanager import EventManager
 
 from .test_backends import TEST_CHAT_BACKEND
 from .test_lmfuncs import test_functions
@@ -29,6 +28,6 @@ def test_eventmanager():
 
     lmf.set_event_manager.default()
     lmf.set_event_manager.tokenstream()
-    lmf.default.event_manager += EventManager()
+    lmf.default.event_manager += lmf.eventmanager.EventManager()
     with pytest.raises(NotImplementedError):
         lmf.default.event_manager += "not a manager"

@@ -1,7 +1,3 @@
-from json import JSONDecodeError
-
-import pytest
-
 import lmfunctions as lmf
 from lmfunctions import Message
 
@@ -21,13 +17,18 @@ def test_init_response():
 
 def test_init_from_openai_v1():
     lmf.default.backend = TEST_CHAT_BACKEND
-    lmf.complete("1, 2, 3, 4, ").process()
+    out = lmf.complete("1, 2, 3, 4, ")
+    assert isinstance(out, Message)
+    out.process()
     lmf.default.backend.generation.stream = False
-    lmf.complete("1, 2, 3, 4, ").process()
+    out = lmf.complete("1, 2, 3, 4, ")
+    assert isinstance(out, Message)
+    out.process()
 
 
 def test_parse_response():
-    Message('{"first_valid": "json"}').process(schema={"type": "object"})
+    assert isinstance(
+        Message('{"first_valid": "json"}').process(schema={"type": "object"}), dict
+    )
     Message('{+}   {"first_valid": "json"}').process(schema={"type": "object"})
-    with pytest.raises(JSONDecodeError):
-        Message("  ").process(schema={"type": "object"})
+    assert isinstance(Message("  ").process(schema={"type": "object"}), str)

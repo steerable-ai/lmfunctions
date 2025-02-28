@@ -97,6 +97,7 @@ class LlamaCppBackend(Base):
     numa: bool = False
     chat_format: str | None = None
     verbose: bool = False
+    chat: bool = True
     generation: LLamaCppGenerationParams = LLamaCppGenerationParams()
 
     _llama: Any = None
@@ -127,7 +128,7 @@ class LlamaCppBackend(Base):
                 model_path = model_reference
             self._llama = Llama(
                 model_path=model_path,
-                **self.model_dump(exclude={"name", "model", "generation"})
+                **self.model_dump(exclude={"name", "model", "generation", "chat"})
             )
         return self._llama
 
@@ -139,12 +140,15 @@ class LlamaCppBackend(Base):
         return self
 
     def __call__(
-        self, input: Any = "", schema: Optional[Dict] = None, **kwargs
+        self,
+        input: str | List[str] | List[Message] | List[List[Message]] = "",
+        schema: Optional[Dict] = None,
+        **kwargs
     ) -> Message:
         llama_ccp_import()
 
-        if "tokenizer.chat_template" in self.llama.metadata:
-            # If the metadata contain a chat_template, assume a chat model
+        if self.chat and "tokenizer.chat_template" in self.llama.metadata:
+            # Chat mode
             params = (
                 self.generation.model_dump()
                 | dict(
@@ -165,7 +169,7 @@ class LlamaCppBackend(Base):
             response = Message.from_openai_v1(response_openai_v1)
 
         else:
-            # Otherwise, assume a text generation model
+            # Text generation mode
             if not isinstance(input, str):
                 raise ValueError("The input must be a string.")
             from llama_cpp.llama_chat_format import _grammar_for_json_schema

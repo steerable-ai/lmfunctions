@@ -6,7 +6,7 @@ import pytest
 import requests
 
 import lmfunctions as lmf
-from lmfunctions import LMFunc, Message, from_store, from_string, lmdef
+from lmfunctions import LMFunc, Message, lmdef
 
 from .models import CityInfo, Entities, FlightRoute, NERInput, Plan, TwoCities
 from .test_backends import TEST_CHAT_BACKEND
@@ -138,22 +138,22 @@ def test_serialize_deserialize():
         for func, args, kwargs in test_functions.values():
             func.info()
             serialized = func.dumps(format=format)
-            deserialized = from_string(serialized, format=format)
+            deserialized = lmf.from_string(serialized, format=format)
             assert deserialized.dumps(format=format) == serialized
             deserialized(*args, **kwargs)
 
-    anagram = from_store("steerable/lmfunc/anagram")
+    anagram = lmf.from_store("steerable/lmfunc/anagram")
 
     with pytest.raises(ValueError):
         serialized = anagram.dumps(format="unsupported")
     with pytest.raises(ValueError):
-        from_string("string", format="unsupported")
+        lmf.from_string("string", format="unsupported")
 
     anagram.loads(anagram.dumps())
 
 
 test_url = "http://localhost:8000/docs"
-func = from_store("steerable/lmfunc/route")
+func = lmf.from_store("steerable/lmfunc/route")
 
 
 def serve_func():
@@ -201,8 +201,8 @@ async def test_fastapi_app():
         if kwargs:
             await func.async_handler()(kwargs)
             assert func.fastapi_app()
-            assert from_string(func.dumps()).fastapi_app()
+            assert lmf.from_string(func.dumps()).fastapi_app()
         else:
             await func.async_handler()(*args)
             assert func.fastapi_app()
-            assert from_string(func.dumps()).fastapi_app()
+            assert lmf.from_string(func.dumps()).fastapi_app()

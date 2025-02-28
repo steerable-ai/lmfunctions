@@ -202,8 +202,9 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
         retry_policy: Optional[RetryPolicy] = None,
         event_manager: Optional[EventManager] = None,
         extra_args={},
+        batch_call=False,
         **kwargs,
-    ) -> ReturnType:
+    ) -> ReturnType | List[ReturnType]:
         """
         Calls the language function to generate a response based on the given inputs.
 
@@ -243,6 +244,7 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
                 arg0 = args[0] if args else next(iter(kwargs.values()), None)
                 if len(args) + len(kwargs) == 1 and (
                     isinstance(arg0, str)  # String
+                    or (batch_call and isinstance(arg0, list))  # Batch
                     or is_message_list(arg0)  # List of Messages
                     or isinstance(arg0, BaseModel)  # Pydantic model
                 ):
@@ -260,99 +262,120 @@ class LMFunc(Base, Generic[InputArgs, ReturnType]):
                     before_sleep=lambda x: event_manager("retry", retry_call_state=x),
                 ):
                     with attempt:
-                        if is_message_list(input):
-                            backend_input = input
-                        else:
-                            # Render Input as a string
-                            input_string = self.to_json_str(input)
-                            # Render Examples as strings
-                            examples_string = [
-                                (self.to_json_str(i), self.to_json_str(o))
-                                for i, o in examples
-                            ]
-                            # Render Prompt
-                            prompt = self.template.render(
-                                inputs=input_string,
-                                examples=examples_string,
-                            )
-                            backend_input = prompt
-
-                        # Language Model Prompt Template Render Callback
-                        event_manager(
-                            "input_render",
-                            func=self,
-                            args=args,
-                            kwargs=kwargs,
-                            examples=examples,
-                            backend=backend,
-                            retry_policy=retry_policy,
-                            event_manager=event_manager,
-                            extra_args=extra_args,
-                            tracer=tracer,
-                            span=span,
-                            ##
-                            input=input,
-                            attempt=attempt,
-                            backend_input=backend_input,
+                        inputs = (
+                            input if batch_call and isinstance(input, list) else [input]
                         )
+                        backend_inputs = []
+                        for input in inputs:
+                            if is_message_list(input):
+                                backend_input = input
+
+                            else:
+                                # Render Input as a string
+                                input_string = self.to_json_str(input)
+                                # Render Examples as strings
+                                examples_string = [
+                                    (self.to_json_str(i), self.to_json_str(o))
+                                    for i, o in examples
+                                ]
+                                # Render Prompt
+                                prompt = self.template.render(
+                                    inputs=input_string,
+                                    examples=examples_string,
+                                )
+                                backend_input = prompt
+                            backend_inputs.append(backend_input)
+
+                            # Language Model Prompt Template Render Callback
+                            event_manager(
+                                "input_render",
+                                func=self,
+                                args=args,
+                                kwargs=kwargs,
+                                examples=examples,
+                                backend=backend,
+                                retry_policy=retry_policy,
+                                event_manager=event_manager,
+                                extra_args=extra_args,
+                                tracer=tracer,
+                                span=span,
+                                ##
+                                input=input,
+                                attempt=attempt,
+                                backend_input=backend_input,
+                            )
 
                         # Call Backend
-                        response = backend(backend_input, schema=self.output_schema)
-
-                        # Process the response
-                        parsed_response = response.process(
-                            self.output_schema,
-                            handle_token_or_char=lambda **kwargs: event_manager(
-                                "token_or_char", span=span, **kwargs
-                            ),
+                        backend_response = backend(
+                            backend_inputs if batch_call else backend_inputs[0],
+                            schema=self.output_schema,
                         )
 
-                        if not (self.description) and self.output_schema is None:
-                            # If description and output schema are empty, output is the backend output
-                            output = response
-                        else:
-                            if isinstance(parsed_response, dict):
-                                # If the response is a dictionary, build a Pydantic object
-                                output_model = self.output_model(**parsed_response)
-                                if self.output_model.__name__ == "OutputWrapper":
-                                    # If the object is a wrapper, unwrap it
-                                    first_field = next(
-                                        iter(output_model.model_fields.keys())
-                                    )
-                                    output = getattr(output_model, first_field)
-                                else:
-                                    output = output_model
+                        responses = (
+                            backend_response
+                            if isinstance(backend_response, list)
+                            else [backend_response]
+                        )
+                        # Process the responses
+                        outputs = []
+                        for backend_input, response in zip(backend_inputs, responses):
+                            parsed_response = response.process(
+                                self.output_schema,
+                                handle_token_or_char=lambda **kwargs: event_manager(
+                                    "token_or_char", span=span, **kwargs
+                                ),
+                            )
+                            if not (self.description) and self.output_schema is None:
+                                # If description and output schema are empty, output is the backend output
+                                output = response
                             else:
-                                # Otherwise, the output is the processed response
-                                output = parsed_response
+                                if isinstance(parsed_response, dict):
+                                    # If the response is a dictionary, build a Pydantic object
+                                    output_model = self.output_model(**parsed_response)
+                                    if self.output_model.__name__ == "OutputWrapper":
+                                        # If the object is a wrapper, unwrap it
+                                        first_field = next(
+                                            iter(output_model.model_fields.keys())
+                                        )
+                                        output = getattr(output_model, first_field)
+                                    else:
+                                        output = output_model
+                                else:
+                                    # Otherwise, the output is the processed response
+                                    output = parsed_response
 
-                        # Success Callback
-                        event_manager(
-                            "success",
-                            func=self,
-                            args=args,
-                            kwargs=kwargs,
-                            examples=examples,
-                            backend=backend,
-                            retry_policy=retry_policy,
-                            event_manager=event_manager,
-                            extra_args=extra_args,
-                            tracer=tracer,
-                            span=span,
-                            input=input,
-                            backend_input=backend_input,
-                            attempt=attempt,
-                            ##
-                            response=response,
-                            completion=response.content,
-                            output=output,
-                        )
+                            # Success Callback
+                            event_manager(
+                                "success",
+                                func=self,
+                                args=args,
+                                kwargs=kwargs,
+                                examples=examples,
+                                backend=backend,
+                                retry_policy=retry_policy,
+                                event_manager=event_manager,
+                                extra_args=extra_args,
+                                tracer=tracer,
+                                span=span,
+                                input=input,
+                                backend_input=backend_input,
+                                attempt=attempt,
+                                ##
+                                response=response,
+                                completion=response.content,
+                                output=output,
+                            )
+                            outputs.append(output)
+
             except Exception as exception:
                 # Exception Callback
                 event_manager("exception", exception=exception, vars=locals())
                 raise exception
             finally:
-                return output
+                if batch_call:
+                    return outputs
+                else:
+                    return outputs[0]
 
     def async_handler(self):
         """
