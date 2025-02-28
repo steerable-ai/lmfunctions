@@ -87,14 +87,17 @@ class Message(Base):
                             try:
                                 return json.loads(self.content)
                             except json.JSONDecodeError:
-                                self.content, in_json = "", False
+                                break
                     elif open_braces:
                         depth, in_json = 1, True
-        return (
-            json.loads(self.content)
-            if (schema and schema.get("type", None) != "string")
-            else self.content
-        )
+
+        if schema and schema.get("type", None) != "string":
+            try:
+                return json.loads(self.content)
+            except json.JSONDecodeError:
+                # If parsing fails, return the raw text
+                return self.content
+        return self.content
 
     @classmethod
     def from_openai_v1(cls, response: Union[Any, Iterator[Any]]):
