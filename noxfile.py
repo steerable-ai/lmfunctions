@@ -1,8 +1,6 @@
-import tempfile
-
 import nox
 
-nox.options.sessions = "lint", "types", "safety", "tests"
+nox.options.sessions = "lint", "types", "tests"
 
 
 @nox.session(python=["3.11"])
@@ -28,23 +26,6 @@ def types(session) -> None:
         "--non-interactive",
         "src",
     )
-
-
-@nox.session(python=["3.11"])
-def safety(session):
-    with tempfile.NamedTemporaryFile() as requirements:
-        session.run(
-            "poetry",
-            "export",
-            "--with",
-            "dev",
-            "--format=requirements.txt",
-            "--without-hashes",
-            f"--output={requirements.name}",
-            external=True,
-        )
-        session.install("safety")
-        session.run("safety", "check", f"--file={requirements.name}", "--full-report")
 
 
 @nox.session(python=["3.10", "3.11", "3.12"])
