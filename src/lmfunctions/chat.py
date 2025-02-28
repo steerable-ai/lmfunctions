@@ -63,7 +63,7 @@ def chat(
     user_input: Callable[[], str] = partial(
         multiline_input, terminators=("", "\n", "/exit", "/clear", "/history")
     ),
-    system_message="",
+    system_message=" ",
 ):
     """
     A minimal chat loop that interacts with the specified backend
