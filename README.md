@@ -282,9 +282,10 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 
 The backends currently supported are 
 
-* [llamacpp](https://github.com/ggerganov/llama.cpp): lean backend that runs locally hosted quantized models (GGUF format) on a variety of CPU and GPU devices
+* [litellm](https://github.com/BerriAI/litellm): provides a common wrapper interface (OpenAI-compatible) for several language model providers. Can be also used to run local models, e.g. via Ollama
+* [vllm](https://docs.vllm.ai/en/latest/): enhanced throughput and reduce memory waste using a memory management algorithm called PagedAttention. Recommended for batched generation 
 * [transformers](https://github.com/huggingface/transformers): runs models in HF transformers format (high flexibility but heavy dependencies such as PyTorch)
-* [litellm](https://github.com/BerriAI/litellm): provides a common wrapper interface (OpenAI-compatible) for several language model providers
+* [llamacpp](https://github.com/ggerganov/llama.cpp): lean backend that runs locally hosted quantized models (GGUF format) on a variety of CPU and GPU devices
 
 The default backend can be set using the `set_backend` function. For example, the following sets a locally hosted model backed by `llamacpp` where the model weights are retrieved from HuggingFace Hub:
 
