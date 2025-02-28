@@ -156,10 +156,6 @@ test_url = "http://localhost:8000/docs"
 func = lmf.from_store("steerable/lmfunc/route")
 
 
-def serve_func():
-    func.serve()
-
-
 @pytest.fixture()
 def server():
     timeout = 20
@@ -168,7 +164,7 @@ def server():
 
     cleanup_on_sigterm()
     context = get_context()
-    proc = context.Process(target=serve_func, daemon=True)
+    proc = context.Process(target=func.serve, daemon=True)
     proc.start()
     start_time = time.time()
     while True:
