@@ -48,12 +48,11 @@ class VLLMBackend(Base):
             if lazy_import("vllm", import_error_callback=import_error_callback):
                 from vllm import LLM
 
-                self._lm = LLM(
-                    **self.model_dump(
-                        exclude={"name", "sampling_params", "chat"},
-                        exclude_none=True,
-                    )
+                params = self.model_dump(
+                    exclude={"name", "sampling_params", "chat"},
+                    exclude_none=True,
                 )
+                self._lm = LLM(**params)
             else:
                 raise ImportError("The package 'vllm' is required")  # pragma: no cover
         return self._lm

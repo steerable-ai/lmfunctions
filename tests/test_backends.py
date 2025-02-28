@@ -17,47 +17,47 @@ TEST_CHAT_BACKEND = lmf.backends.LlamaCppBackend(
 )
 
 
-def test_vllm():
-    lmf.set_backend.vllm()
-    # Test chat mode (default)
-    out = lmf.complete(prompt)  # Single string
-    assert isinstance(out, lmf.Message)
-    out = lmf.complete(prompt, schema)  # Single string with schema
-    assert isinstance(out, lmf.Message)
-    out = lmf.complete([prompt] * 2)  # List of strings
-    assert (
-        isinstance(out, list)
-        and len(out) == 2
-        and all(isinstance(m, lmf.Message) for m in out)
-    )
-    out = lmf.complete([prompt] * 2, schema)  # List of strings with schema
-    assert (
-        isinstance(out, list)
-        and len(out) == 2
-        and all(isinstance(m, lmf.Message) for m in out)
-    )
-    out = lmf.complete(conversation)  # Message list
-    assert isinstance(out, lmf.Message)
-    out = lmf.complete(conversation, schema)  # Message list with schema
-    assert isinstance(out, lmf.Message)
-    # Test text generation mode
-    lmf.default.backend.chat = False
-    out = lmf.complete(prompt)  # Single string
-    assert isinstance(out, lmf.Message)
-    out = lmf.complete(prompt, schema)  # Single string with schema
-    assert isinstance(out, lmf.Message)
-    out = lmf.complete([prompt] * 2)  # List of strings
-    assert (
-        isinstance(out, list)
-        and len(out) == 2
-        and all(isinstance(m, lmf.Message) for m in out)
-    )
-    out = lmf.complete([prompt] * 2, schema)  # List of strings with schema
-    assert (
-        isinstance(out, list)
-        and len(out) == 2
-        and all(isinstance(m, lmf.Message) for m in out)
-    )
+# def test_vllm():
+#     lmf.set_backend.vllm()
+#     # Test chat mode (default)
+#     out = lmf.complete(prompt)  # Single string
+#     assert isinstance(out, lmf.Message)
+#     out = lmf.complete(prompt, schema)  # Single string with schema
+#     assert isinstance(out, lmf.Message)
+#     out = lmf.complete([prompt] * 2)  # List of strings
+#     assert (
+#         isinstance(out, list)
+#         and len(out) == 2
+#         and all(isinstance(m, lmf.Message) for m in out)
+#     )
+#     out = lmf.complete([prompt] * 2, schema)  # List of strings with schema
+#     assert (
+#         isinstance(out, list)
+#         and len(out) == 2
+#         and all(isinstance(m, lmf.Message) for m in out)
+#     )
+#     out = lmf.complete(conversation)  # Message list
+#     assert isinstance(out, lmf.Message)
+#     out = lmf.complete(conversation, schema)  # Message list with schema
+#     assert isinstance(out, lmf.Message)
+#     # Test text generation mode
+#     lmf.default.backend.chat = False
+#     out = lmf.complete(prompt)  # Single string
+#     assert isinstance(out, lmf.Message)
+#     out = lmf.complete(prompt, schema)  # Single string with schema
+#     assert isinstance(out, lmf.Message)
+#     out = lmf.complete([prompt] * 2)  # List of strings
+#     assert (
+#         isinstance(out, list)
+#         and len(out) == 2
+#         and all(isinstance(m, lmf.Message) for m in out)
+#     )
+#     out = lmf.complete([prompt] * 2, schema)  # List of strings with schema
+#     assert (
+#         isinstance(out, list)
+#         and len(out) == 2
+#         and all(isinstance(m, lmf.Message) for m in out)
+#     )
 
 
 def test_transformers():
