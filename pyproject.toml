@@ -24,7 +24,7 @@ pandas = "^2.2.2"
 opentelemetry-sdk = "^1.25.0"
 
 [tool.poetry.group.dev.dependencies]
-black = { extras = ["jupyter"], version = "^24.4.0" }
+black = { extras = ["jupyter"], version = ">=24.4,<26.0" }
 ruff = ">=0.0.287,<0.9.9"
 mypy = "1.13.0"
 types-requests = "<2.33"
